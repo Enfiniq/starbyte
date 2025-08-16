@@ -27,6 +27,12 @@ const StarProvider = ({ children }: StarProviderProps) => {
           bio: user.bio ?? DEFAULT_STAR_DATA.bio,
           stardust: user.stardust ?? DEFAULT_STAR_DATA.stardust,
           level: user.level ?? DEFAULT_STAR_DATA.level,
+          displayName: user.display_name ?? DEFAULT_STAR_DATA.displayName,
+          totalBytesCompleted:
+            user.total_bytes_completed ?? DEFAULT_STAR_DATA.totalBytesCompleted,
+          currentStreak: user.current_streak ?? DEFAULT_STAR_DATA.currentStreak,
+          longestStreak: user.longest_streak ?? DEFAULT_STAR_DATA.longestStreak,
+          isPremium: user.is_premium ?? DEFAULT_STAR_DATA.isPremium,
         };
         setStar(mapped);
         try {
@@ -64,6 +70,11 @@ const StarProvider = ({ children }: StarProviderProps) => {
         bio?: string | null;
         stardust?: number | null;
         level?: number | null;
+        displayName?: string | null;
+        totalBytesCompleted?: number | null;
+        currentStreak?: number | null;
+        longestStreak?: number | null;
+        isPremium?: boolean | null;
       }
       const sUser = session.user as unknown as SessionUser;
       const mapped: Star = {
@@ -75,6 +86,14 @@ const StarProvider = ({ children }: StarProviderProps) => {
         bio: sUser.bio ?? DEFAULT_STAR_DATA.bio,
         stardust: (sUser.stardust ?? DEFAULT_STAR_DATA.stardust) as number,
         level: (sUser.level ?? DEFAULT_STAR_DATA.level) as number,
+        displayName: sUser.displayName ?? DEFAULT_STAR_DATA.displayName,
+        totalBytesCompleted: (sUser.totalBytesCompleted ??
+          DEFAULT_STAR_DATA.totalBytesCompleted) as number,
+        currentStreak: (sUser.currentStreak ??
+          DEFAULT_STAR_DATA.currentStreak) as number,
+        longestStreak: (sUser.longestStreak ??
+          DEFAULT_STAR_DATA.longestStreak) as number,
+        isPremium: (sUser.isPremium ?? DEFAULT_STAR_DATA.isPremium) as boolean,
       };
       setStar(mapped);
       try {

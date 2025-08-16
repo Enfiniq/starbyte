@@ -8,4 +8,9 @@ export const DEFAULT_STAR_DATA: Star = {
   bio: null,
   stardust: 0,
   level: 0,
+  displayName: "Guest",
+  totalBytesCompleted: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  isPremium: false,
 };

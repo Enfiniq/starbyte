@@ -6,4 +6,9 @@ export type Star = {
   bio: string | null;
   stardust: number;
   level: number;
+  displayName: string;
+  totalBytesCompleted: number;
+  currentStreak: number;
+  longestStreak: number;
+  isPremium: boolean;
 };

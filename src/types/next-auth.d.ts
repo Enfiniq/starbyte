@@ -10,6 +10,11 @@ declare module "next-auth" {
       bio?: string | null;
       stardust?: number | null;
       level?: number | null;
+      displayName?: string | null;
+      totalBytesCompleted?: number | null;
+      currentStreak?: number | null;
+      longestStreak?: number | null;
+      isPremium?: boolean | null;
     };
   }
 
@@ -20,6 +25,11 @@ declare module "next-auth" {
     bio?: string | null;
     stardust?: number | null;
     level?: number | null;
+    displayName?: string | null;
+    totalBytesCompleted?: number | null;
+    currentStreak?: number | null;
+    longestStreak?: number | null;
+    isPremium?: boolean | null;
   }
 }
 
@@ -32,5 +42,10 @@ declare module "next-auth/jwt" {
     bio?: string | null;
     stardust?: number | null;
     level?: number | null;
+    displayName?: string | null;
+    totalBytesCompleted?: number | null;
+    currentStreak?: number | null;
+    longestStreak?: number | null;
+    isPremium?: boolean | null;
   }
 }

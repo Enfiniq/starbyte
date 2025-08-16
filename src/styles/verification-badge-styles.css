@@ -1,0 +1,15 @@
+.PremiumText {
+  color: #4f7cff;
+}
+
+.PremiumStyles {
+  color: #4f7cff;
+}
+
+.light .VerifiedStyles {
+  color: #000000;
+}
+
+.dark .VerifiedStyles {
+  color: #ffffff;
+}

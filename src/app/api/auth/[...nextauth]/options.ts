@@ -15,6 +15,11 @@ interface UserData {
   bio?: string | null;
   stardust?: number | null;
   level?: number | null;
+  display_name?: string | null;
+  total_bytes_completed?: number | null;
+  current_streak?: number | null;
+  longest_streak?: number | null;
+  is_premium?: boolean | null;
 }
 
 interface ExtendedUser extends User {
@@ -25,6 +30,11 @@ interface ExtendedUser extends User {
   bio?: string | null;
   stardust?: number | null;
   level?: number | null;
+  displayName?: string | null;
+  totalBytesCompleted?: number | null;
+  currentStreak?: number | null;
+  longestStreak?: number | null;
+  isPremium?: boolean | null;
 }
 
 type AuthCode =
@@ -63,6 +73,11 @@ function toExtendedUser(u: UserData): ExtendedUser {
     bio: u.bio ?? null,
     stardust: u.stardust ?? 0,
     level: u.level ?? 0,
+    displayName: u.display_name ?? null,
+    totalBytesCompleted: u.total_bytes_completed ?? 0,
+    currentStreak: u.current_streak ?? 0,
+    longestStreak: u.longest_streak ?? 0,
+    isPremium: u.is_premium ?? false,
   } as ExtendedUser;
 }
 
@@ -175,6 +190,11 @@ export const authOptions: NextAuthOptions = {
             token.bio = u.bio ?? null;
             token.stardust = u.stardust ?? 0;
             token.level = u.level ?? 0;
+            token.displayName = u.display_name ?? null;
+            token.totalBytesCompleted = u.total_bytes_completed ?? 0;
+            token.currentStreak = u.current_streak ?? 0;
+            token.longestStreak = u.longest_streak ?? 0;
+            token.isPremium = u.is_premium ?? false;
             return token;
           }
 
@@ -191,6 +211,11 @@ export const authOptions: NextAuthOptions = {
         token.bio = token.bio ?? null;
         token.stardust = token.stardust ?? 0;
         token.level = token.level ?? 0;
+        token.displayName = token.displayName ?? null;
+        token.totalBytesCompleted = token.totalBytesCompleted ?? 0;
+        token.currentStreak = token.currentStreak ?? 0;
+        token.longestStreak = token.longestStreak ?? 0;
+        token.isPremium = token.isPremium ?? false;
 
         return token;
       }
@@ -204,6 +229,11 @@ export const authOptions: NextAuthOptions = {
         token.bio = extendedUser.bio ?? null;
         token.stardust = extendedUser.stardust ?? 0;
         token.level = extendedUser.level ?? 0;
+        token.displayName = extendedUser.displayName ?? null;
+        token.totalBytesCompleted = extendedUser.totalBytesCompleted ?? 0;
+        token.currentStreak = extendedUser.currentStreak ?? 0;
+        token.longestStreak = extendedUser.longestStreak ?? 0;
+        token.isPremium = extendedUser.isPremium ?? false;
       }
 
       return token;
@@ -217,6 +247,14 @@ export const authOptions: NextAuthOptions = {
         session.user.bio = (token.bio as string | null) ?? null;
         session.user.stardust = (token.stardust as number | null) ?? 0;
         session.user.level = (token.level as number | null) ?? 0;
+        session.user.displayName = (token.displayName as string | null) ?? null;
+        session.user.totalBytesCompleted =
+          (token.totalBytesCompleted as number | null) ?? 0;
+        session.user.currentStreak =
+          (token.currentStreak as number | null) ?? 0;
+        session.user.longestStreak =
+          (token.longestStreak as number | null) ?? 0;
+        session.user.isPremium = (token.isPremium as boolean | null) ?? false;
       }
       return session;
     },
