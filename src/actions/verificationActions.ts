@@ -215,7 +215,10 @@ export async function resetPasswordAction(
     const supabase = await createServerClient();
 
     const { data, error } = await supabase.rpc("reset_password", {
-      p_identifier: validatedData.identifier,
+      p_identifier:
+        validatedData.identifier && String(validatedData.identifier).trim()
+          ? String(validatedData.identifier).trim()
+          : null,
       p_new_password: validatedData.newPassword,
       p_verification_code: validatedData.verificationCode,
     });

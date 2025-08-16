@@ -219,7 +219,7 @@ function Page() {
               <button
                 type="button"
                 onClick={handleResend}
-                className="text-primary underline underline-offset-4 cursor-pointer"
+                className="text-primary cursor-pointer"
               >
                 Request a new code
               </button>

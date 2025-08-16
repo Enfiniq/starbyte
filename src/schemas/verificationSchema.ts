@@ -2,9 +2,11 @@ import { z } from "zod";
 import { starNameValidation } from "@/schemas/signUpSchema";
 import { emailSchema } from "@/schemas/signInSchema";
 
-const emailOrUsernameSchema = z.union([emailSchema, starNameValidation], {
-  errorMap: () => ({ message: "Please enter a valid email or username" }),
-});
+const emailOrUsernameSchema = z
+  .union([emailSchema, starNameValidation])
+  .refine(() => true, {
+    message: "Please enter a valid email or username",
+  });
 
 export const verifyEmailSchema = z.object({
   identifier: emailOrUsernameSchema,
@@ -19,10 +21,13 @@ export const initiatePasswordResetSchema = z.object({
   identifier: emailOrUsernameSchema,
 });
 
+// Password reset uses a token link (24 bytes hex -> 48 chars). Identifier is optional when token is provided.
 export const resetPasswordSchema = z.object({
-  identifier: emailOrUsernameSchema,
+  identifier: emailOrUsernameSchema.optional().nullable(),
   newPassword: z.string().min(8, "Password must be at least 8 characters"),
-  verificationCode: z.string().length(6, "Verification code must be 6 digits"),
+  verificationCode: z
+    .string()
+    .regex(/^[a-f0-9]{48}$/i, "Invalid or malformed reset token"),
 });
 
 export const sendVerificationEmailSchema = z.object({
