@@ -72,85 +72,111 @@ async function oneClickLogin(
   image?: string | null
 ) {
   if (!email || !name) return { ok: false };
-  const base =
+  const base = getBaseUrl();
+  try {
+    const res = await fetch(`${base}/api/one-click-login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, image }),
+    });
+    if (!res.ok) return { ok: false };
+    const data = await res.json().catch(() => null);
+    return { ok: !!data?.success, user: (data?.user as UserData) || undefined };
+  } catch {
+    return { ok: false };
+  }
+}
+
+function getBaseUrl() {
+  return (
     process.env.NEXTAUTH_URL ||
     process.env.NEXT_PUBLIC_BASE_URL ||
-    "http://localhost:3000";
-  const res = await fetch(`${base}/api/one-click-login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, email, image }),
+    "http://localhost:3000"
+  );
+}
+
+function getCredentialsProvider() {
+  return CredentialsProvider({
+    id: "credentials",
+    name: "Credentials",
+    credentials: {
+      identifier: { label: "Email", type: "text" },
+      password: { label: "Password", type: "password" },
+    },
+    async authorize(
+      credentials: Record<string, string> | undefined
+    ): Promise<User | null> {
+      const result = await rpcAuthenticate(
+        credentials?.identifier || "",
+        credentials?.password || ""
+      );
+      if (result.code === "OK" && result.user)
+        return toExtendedUser(result.user);
+      if (result.code === "DATABASE_ERROR") throw new Error("DATABASE_ERROR");
+      if (result.code === "VERIFICATION_REQUIRED")
+        throw new Error("VERIFICATION_REQUIRED");
+      return null;
+    },
   });
-  if (!res.ok) return { ok: false };
-  const data = await res.json().catch(() => null);
-  return { ok: !!data?.success, user: (data?.user as UserData) || undefined };
+}
+
+function getSocialProviders() {
+  const providers: NextAuthOptions["providers"] = [];
+  type ProviderFactory = () => NextAuthOptions["providers"][number];
+  const add = (enabled: boolean, factory: ProviderFactory) => {
+    if (enabled) providers.push(factory());
+  };
+
+  add(
+    Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    () =>
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      })
+  );
+  add(
+    Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+    () =>
+      GithubProvider({
+        clientId: process.env.GITHUB_CLIENT_ID!,
+        clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+      })
+  );
+  add(
+    Boolean(
+      process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET
+    ),
+    () =>
+      FacebookProvider({
+        clientId: process.env.FACEBOOK_CLIENT_ID!,
+        clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+      })
+  );
+  add(
+    Boolean(process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET),
+    () =>
+      TwitterProvider({
+        clientId: process.env.TWITTER_CLIENT_ID!,
+        clientSecret: process.env.TWITTER_CLIENT_SECRET!,
+      })
+  );
+  add(
+    Boolean(
+      process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET
+    ),
+    () =>
+      LinkedInProvider({
+        clientId: process.env.LINKEDIN_CLIENT_ID!,
+        clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
+      })
+  );
+
+  return providers;
 }
 
 export const authOptions: NextAuthOptions = {
-  providers: [
-    CredentialsProvider({
-      id: "credentials",
-      name: "Credentials",
-      credentials: {
-        identifier: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(
-        credentials: Record<string, string> | undefined
-      ): Promise<User | null> {
-        const result = await rpcAuthenticate(
-          credentials?.identifier || "",
-          credentials?.password || ""
-        );
-        if (result.code === "OK" && result.user)
-          return toExtendedUser(result.user);
-        if (result.code === "DATABASE_ERROR") throw new Error("DATABASE_ERROR");
-        if (result.code === "VERIFICATION_REQUIRED")
-          throw new Error("VERIFICATION_REQUIRED");
-        return null;
-      },
-    }),
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
-      ? [
-          GithubProvider({
-            clientId: process.env.GITHUB_CLIENT_ID,
-            clientSecret: process.env.GITHUB_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-    ...(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET
-      ? [
-          FacebookProvider({
-            clientId: process.env.FACEBOOK_CLIENT_ID,
-            clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-    ...(process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET
-      ? [
-          TwitterProvider({
-            clientId: process.env.TWITTER_CLIENT_ID,
-            clientSecret: process.env.TWITTER_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-    ...(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET
-      ? [
-          LinkedInProvider({
-            clientId: process.env.LINKEDIN_CLIENT_ID,
-            clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-          }),
-        ]
-      : []),
-  ],
+  providers: [getCredentialsProvider(), ...getSocialProviders()],
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider !== "credentials") {
