@@ -154,7 +154,6 @@ export default function RootLayout({
           name="msapplication-TileImage"
           content="/icons/icon512_rounded.png"
         />
-        <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body
