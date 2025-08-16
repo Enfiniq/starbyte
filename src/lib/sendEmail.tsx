@@ -68,7 +68,9 @@ export async function sendEmail(
           greeting: `Hello, <span style="border-bottom: 2px solid ${BRAND}; display: inline-block;">${username}</span>`,
           message: `Thank you for registering on StarByte via <span style=\"color: ${BRAND}; text-decoration: none;\">${email}</span>! Please use the following 6-character code to verify your email address:`,
           buttonText: "Complete Registration",
-          buttonUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/authentication/verify-email/${username}`,
+          buttonUrl: `${BASE_URL}/authentication/verify-email/${username}?code=${encodeURIComponent(
+            verifyCode
+          )}`,
         };
       case "resend":
         return {
@@ -76,7 +78,9 @@ export async function sendEmail(
           greeting: `Hello again, <span style="border-bottom: 2px solid ${BRAND}; display: inline-block;">${username}</span>`,
           message: `We've resent your verification code as requested. Please use the following 6-character code to verify your email address:`,
           buttonText: "Verify Email",
-          buttonUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/authentication/verify-email/${username}`,
+          buttonUrl: `${BASE_URL}/authentication/verify-email/${username}?code=${encodeURIComponent(
+            verifyCode
+          )}`,
         };
       case "password-reset":
         return {
@@ -84,9 +88,7 @@ export async function sendEmail(
           greeting: `Hello, <span style="border-bottom: 2px solid ${BRAND}; display: inline-block;">${username}</span>`,
           message: `You've requested to reset your password. Click the button below to continue. If you didn't request this, you can safely ignore this email.`,
           buttonText: "Reset Password",
-          buttonUrl: `${
-            process.env.NEXT_PUBLIC_BASE_URL
-          }/authentication/reset-password?token=${encodeURIComponent(
+          buttonUrl: `${BASE_URL}/authentication/reset-password?token=${encodeURIComponent(
             verifyCode
           )}`,
         };
@@ -96,7 +98,9 @@ export async function sendEmail(
           greeting: `Hello, <span style="border-bottom: 2px solid ${BRAND}; display: inline-block;">${username}</span>`,
           message: `Please use the following 6-character code to verify your email address:`,
           buttonText: "Verify Email",
-          buttonUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/authentication/verify-email/${username}`,
+          buttonUrl: `${BASE_URL}/authentication/verify-email/${username}?code=${encodeURIComponent(
+            verifyCode
+          )}`,
         };
     }
   };
