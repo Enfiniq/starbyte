@@ -66,35 +66,6 @@ function toExtendedUser(u: UserData): ExtendedUser {
   } as ExtendedUser;
 }
 
-async function oneClickLogin(
-  name?: string | null,
-  email?: string | null,
-  image?: string | null
-) {
-  if (!email || !name) return { ok: false };
-  const base = getBaseUrl();
-  try {
-    const res = await fetch(`${base}/api/one-click-login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, image }),
-    });
-    if (!res.ok) return { ok: false };
-    const data = await res.json().catch(() => null);
-    return { ok: !!data?.success, user: (data?.user as UserData) || undefined };
-  } catch {
-    return { ok: false };
-  }
-}
-
-function getBaseUrl() {
-  return (
-    process.env.NEXTAUTH_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    "http://localhost:3000"
-  );
-}
-
 function getCredentialsProvider() {
   return CredentialsProvider({
     id: "credentials",
@@ -178,38 +149,61 @@ function getSocialProviders() {
 export const authOptions: NextAuthOptions = {
   providers: [getCredentialsProvider(), ...getSocialProviders()],
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider !== "credentials") {
-        const { email, name, image } = user;
-        const result = await oneClickLogin(name, email, image);
-        if (!result.ok) return false;
-        (user as ExtendedUser).customUserData = result.user;
-        return true;
-      }
+    async signIn({ account }) {
+      if (account?.provider !== "credentials") return true;
       return true;
     },
+    async jwt({ token, user, account }) {
+      if (account && account.provider !== "credentials") {
+        try {
+          const supabase = await createServerClient();
+          const { data: rpcData, error: rpcError } = await supabase.rpc(
+            "create_or_update_social_user",
+            {
+              p_email: user?.email ?? null,
+              p_name: user?.name ?? null,
+              p_image: (user as User | undefined)?.image ?? null,
+            }
+          );
 
-    async jwt({ token, user }) {
+          if (!rpcError && rpcData?.success && rpcData.user) {
+            const u = rpcData.user as UserData;
+            token.id = u.id;
+            token.email = u.email;
+            token.starName = u.star_name;
+            token.avatar = u.avatar ?? null;
+            token.bio = u.bio ?? null;
+            token.stardust = u.stardust ?? 0;
+            token.level = u.level ?? 0;
+            return token;
+          }
+
+          if (rpcError)
+            console.error("RPC create_or_update_social_user error:", rpcError);
+        } catch (e) {
+          console.error("One-click RPC error:", e);
+        }
+
+        token.email = token.email ?? user?.email ?? "";
+        token.starName = token.starName ?? ((user?.name as string) || "");
+        token.avatar =
+          token.avatar ?? (user as User | undefined)?.image ?? null;
+        token.bio = token.bio ?? null;
+        token.stardust = token.stardust ?? 0;
+        token.level = token.level ?? 0;
+
+        return token;
+      }
+
       if (user) {
         const extendedUser = user as ExtendedUser;
-        if (extendedUser.customUserData) {
-          const userData = extendedUser.customUserData;
-          token.id = userData.id;
-          token.email = userData.email;
-          token.starName = userData.star_name;
-          token.avatar = userData.avatar ?? null;
-          token.bio = userData.bio ?? null;
-          token.stardust = userData.stardust ?? 0;
-          token.level = userData.level ?? 0;
-        } else {
-          token.id = extendedUser.id;
-          token.email = extendedUser.email ?? "";
-          token.starName = extendedUser.starName;
-          token.avatar = extendedUser.avatar ?? null;
-          token.bio = extendedUser.bio ?? null;
-          token.stardust = extendedUser.stardust ?? 0;
-          token.level = extendedUser.level ?? 0;
-        }
+        token.id = extendedUser.id;
+        token.email = extendedUser.email ?? "";
+        token.starName = extendedUser.starName;
+        token.avatar = extendedUser.avatar ?? null;
+        token.bio = extendedUser.bio ?? null;
+        token.stardust = extendedUser.stardust ?? 0;
+        token.level = extendedUser.level ?? 0;
       }
 
       return token;
@@ -229,7 +223,22 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 60 * 60, // 1 hour
+  },
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {

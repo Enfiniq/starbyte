@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import SessionProvider from "@/providers/SessionProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -160,7 +161,7 @@ export default function RootLayout({
         className={`${inter.variable} antialiased max-w-screen overflow-x-hidden`}
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          {children}
+          <SessionProvider>{children}</SessionProvider>
           <Toaster richColors></Toaster>
         </ThemeProvider>
       </body>
