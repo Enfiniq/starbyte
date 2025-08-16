@@ -4,6 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import SessionProvider from "@/providers/SessionProvider";
+import MaxWidthWrapper from "@/components/shared/MaxWidthWrapper";
+import Navbar from "@/components/navigation/Navbar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -161,7 +163,10 @@ export default function RootLayout({
         className={`${inter.variable} antialiased max-w-screen overflow-x-hidden`}
       >
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <SessionProvider>{children}</SessionProvider>
+          <SessionProvider>
+            <Navbar />
+            <MaxWidthWrapper>{children}</MaxWidthWrapper>
+          </SessionProvider>
           <Toaster richColors></Toaster>
         </ThemeProvider>
       </body>

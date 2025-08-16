@@ -111,3 +111,40 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: #4f7cff;
 }
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    font-family: var(--font-sans);
+    scrollbar-gutter: stable !important;
+    @apply bg-background text-foreground;
+  }
+}
+
+.navbar {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: -1px !important;
+}
+
+.search-menu-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.75);
+  z-index: 9999999;
+}
+
+.search-menu {
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 5000;
+}
