@@ -1,7 +1,12 @@
+import "@/styles/landing-page-styles.css";
+import Hero from "@/components/landing/Hero";
+
 export default function Home() {
   return (
     <>
-      <h1>StarByte</h1>
+      <main className="relative min-h-screen w-screen overflow-x-hidden">
+        <Hero />
+      </main>
     </>
   );
 }

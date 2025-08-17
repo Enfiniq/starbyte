@@ -112,6 +112,32 @@
   --sidebar-ring: #4f7cff;
 }
 
+@font-face {
+  font-family: "circular-web";
+  src: url("/landing/fonts/circularweb-book.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "general";
+  src: url("/landing/fonts/general.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "robert-medium";
+  src: url("/landing/fonts/robert-medium.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "robert-regular";
+  src: url("/landing/fonts/robert-regular.woff2") format("woff2");
+  font-display: swap;
+}
+@font-face {
+  font-family: "zentry";
+  src: url("/landing/fonts/zentry-regular.woff2") format("woff2");
+  font-display: swap;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -124,24 +150,19 @@
 }
 
 .navbar {
-  position: -webkit-sticky !important;
   position: sticky !important;
   top: -1px !important;
 }
 
 .search-menu-container {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: rgba(0, 0, 0, 0.75);
   z-index: 9999999;
 }
-
 .search-menu {
   padding: 20px;
   border-radius: 8px;
