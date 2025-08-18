@@ -5,40 +5,77 @@ import { FaCheck, FaXmark } from "react-icons/fa6";
 import { Loader2, User } from "lucide-react";
 import { checkUsernameUnique } from "@/supabase/rpc/client";
 
-interface UsernameFieldProps {
-  className?: string;
+type CheckResult = "unknown" | "unique" | "taken";
+
+function isValidUsername(u: string): boolean {
+  const t = u.trim();
+  if (!t) return false;
+  if (t.length < 2 || t.length > 20) return false;
+  return /^[a-zA-Z0-9_]+$/.test(t);
 }
 
-export default function UsernameField({ className = "" }: UsernameFieldProps) {
-  const [username, setUsername] = useState("");
+interface UsernameFieldProps {
+  className?: string;
+  editProfile?: boolean;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}
+
+export default function UsernameField({
+  className = "",
+  editProfile = false,
+  value,
+  defaultValue,
+  onChange,
+}: UsernameFieldProps) {
+  const [username, setUsername] = useState(defaultValue ?? "");
   const [isChecking, setIsChecking] = useState(false);
-  const [result, setResult] = useState<"unknown" | "unique" | "taken">(
-    "unknown"
-  );
+  const [result, setResult] = useState<CheckResult>("unknown");
   const [inputTouched, setInputTouched] = useState(false);
 
-  const canCheck = useMemo(() => {
-    const u = username.trim();
-    if (!u) return false;
-    if (u.length < 2 || u.length > 20) return false;
-    if (!/^[a-zA-Z0-9_]+$/.test(u)) return false;
-    return true;
-  }, [username]);
+  useEffect(() => {
+    if (value === undefined) {
+      setUsername(defaultValue ?? "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultValue]);
+
+  const current = value ?? username ?? "";
+  const isOwnedSame =
+    editProfile &&
+    typeof defaultValue === "string" &&
+    current.trim() === defaultValue;
+
+  const canCheck = useMemo(() => isValidUsername(current), [current]);
 
   useEffect(() => {
+    const trimmed = current.trim();
+
     if (!canCheck) {
       setResult("unknown");
       setIsChecking(false);
       return;
     }
 
+    const isOwned =
+      editProfile &&
+      typeof defaultValue === "string" &&
+      trimmed === defaultValue;
+    if (isOwned) {
+      setResult("unique");
+      setIsChecking(false);
+      return;
+    }
+
     setResult("unknown");
     setIsChecking(true);
-    const valueAtRequest = username.trim();
+    const valueAtRequest = trimmed;
     const timer = setTimeout(async () => {
       try {
         const data = await checkUsernameUnique(valueAtRequest);
-        if (username.trim() !== valueAtRequest) return;
+        // If the input changed since we started, ignore this result
+        if ((value ?? username).trim() !== valueAtRequest) return;
         const unique = data?.success === true;
         setResult(unique ? "unique" : "taken");
       } catch {
@@ -48,10 +85,8 @@ export default function UsernameField({ className = "" }: UsernameFieldProps) {
       }
     }, 400);
 
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [username, canCheck]);
+    return () => clearTimeout(timer);
+  }, [current, canCheck, editProfile, defaultValue, value, username]);
 
   return (
     <div
@@ -62,8 +97,12 @@ export default function UsernameField({ className = "" }: UsernameFieldProps) {
         name="starName"
         type="text"
         placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        value={current}
+        onChange={(e) => {
+          const next = e.target.value;
+          if (onChange) onChange(next);
+          if (value === undefined) setUsername(next);
+        }}
         onBlur={() => setInputTouched(true)}
         required
         minLength={2}
@@ -78,12 +117,16 @@ export default function UsernameField({ className = "" }: UsernameFieldProps) {
           <Loader2 className="animate-spin w-4 h-4 text-gray-500 dark:text-gray-400" />
         )}
         {!isChecking &&
-          inputTouched &&
-          result !== "unknown" &&
-          (result === "unique" ? (
+          (isOwnedSame ? (
             <FaCheck className="text-green-500 w-4 h-4" />
           ) : (
-            <FaXmark className="text-red-500 w-4 h-4" />
+            inputTouched &&
+            result !== "unknown" &&
+            (result === "unique" ? (
+              <FaCheck className="text-green-500 w-4 h-4" />
+            ) : (
+              <FaXmark className="text-red-500 w-4 h-4" />
+            ))
           ))}
       </div>
     </div>
