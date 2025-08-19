@@ -50,14 +50,14 @@ const Navbar = () => {
   };
 
   useKeyboardNavigation({
-    "shift+a": "/authentication",
-    "shift+l": "/",
-    "shift+h": "/home",
-    "shift+b": "/bytes",
-    "shift+s": "/stars",
-    "shift+m": "/marketplace",
-    "shift+d": "/leaderboard",
-    "shift+u": star?.starName ? `/star/${star.starName}` : "/authentication",
+    "alt+a": "/authentication",
+    "alt+l": "/",
+    "alt+h": "/home",
+    "alt+b": "/bytes",
+    "alt+s": "/stars",
+    "alt+m": "/marketplace",
+    "alt+d": "/leaderboard",
+    "alt+u": star?.starName ? `/star/${star.starName}` : "/authentication",
   });
 
   return (

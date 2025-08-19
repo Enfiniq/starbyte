@@ -65,14 +65,14 @@ const ImageSlider = ({ urls }: ImageSliderProps) => {
 
   if (safeUrls.length === 0) {
     return (
-      <div className="group relative bg-zinc-100 aspect-square overflow-hidden rounded-xl grid place-items-center text-xs text-zinc-500">
+      <div className="group relative bg-zinc-100 dark:bg-zinc-900 aspect-square overflow-hidden rounded-xl grid place-items-center text-xs text-zinc-500 dark:text-zinc-400">
         No image
       </div>
     );
   }
 
   return (
-    <div className="group relative bg-zinc-100 aspect-square overflow-hidden rounded-xl">
+    <div className="group relative bg-zinc-100 dark:bg-zinc-900 aspect-square overflow-hidden rounded-xl">
       <div className="absolute z-10 inset-0 opacity-0 group-hover:opacity-100 transition">
         <button
           onClick={(e) => {
@@ -86,7 +86,7 @@ const ImageSlider = ({ urls }: ImageSliderProps) => {
           })}
           aria-label="next image"
         >
-          <ChevronRight className="h-4 w-4 text-zinc-700" />{" "}
+          <ChevronRight className="h-4 w-4 text-zinc-700 dark:text-zinc-200" />{" "}
         </button>
         <button
           onClick={(e) => {
@@ -100,7 +100,7 @@ const ImageSlider = ({ urls }: ImageSliderProps) => {
           })}
           aria-label="previous image"
         >
-          <ChevronLeft className="h-4 w-4 text-zinc-700" />{" "}
+          <ChevronLeft className="h-4 w-4 text-zinc-700 dark:text-zinc-200" />{" "}
         </button>
       </div>
 

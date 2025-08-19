@@ -63,18 +63,20 @@ const RewardsListing = ({ reward, index }: RewardsListingProps) => {
         className="block"
         aria-label={reward.title}
       >
-        <div className="relative w-full aspect-square bg-zinc-100 overflow-hidden rounded-md">
+        <div className="relative w-full aspect-square bg-zinc-100 dark:bg-zinc-900 overflow-hidden rounded-md">
           {urls.length > 0 ? (
             <ImageSlider urls={urls} />
           ) : (
-            <div className="absolute inset-0 grid place-items-center text-xs text-zinc-500">
+            <div className="absolute inset-0 grid place-items-center text-xs text-zinc-500 dark:text-zinc-400">
               No image
             </div>
           )}
           <div className="z-10 absolute top-2 right-2">
             <span
               className={`inline-block h-4 w-4 rounded-full border-4 ${
-                reward.is_active ? "border-primary" : "border-zinc-400"
+                reward.is_active
+                  ? "border-primary"
+                  : "border-zinc-400 dark:border-zinc-600"
               } bg-transparent`}
               title={reward.is_active ? "Active" : "Inactive"}
             />
@@ -114,21 +116,21 @@ const RewardsListing = ({ reward, index }: RewardsListingProps) => {
                 <h3 className="font-medium leading-tight line-clamp-2 flex-1 min-w-0">
                   {reward.title}
                 </h3>
-                <span className="font-medium inline-flex items-center gap-1">
+                <span className="font-medium inline-flex items-center gap-1 text-zinc-900 dark:text-zinc-100">
                   <Star className="h-4 w-4 text-primary" aria-hidden="true" />
                   {reward.price}
                 </span>
               </div>
               {reward.description ? (
-                <p className="mt-1 text-sm text-muted-foreground leading-snug line-clamp-2">
+                <p className="mt-1 text-sm text-muted-foreground dark:text-zinc-300 leading-snug line-clamp-2">
                   {reward.description}
                 </p>
               ) : null}
               <div className="mt-2 flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-normal border border-[#4f7cff] text-[#4f7cff] bg-[#4f7cff]/5 uppercase">
+                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-normal border border-[#4f7cff] text-[#4f7cff] bg-[#4f7cff]/5 uppercase dark:border-[#6f8cff] dark:text-[#9bb0ff] dark:bg-[#6f8cff]/10">
                   {reward.type}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground dark:text-zinc-400">
                   Used {totals.used} / {totals.stock}
                 </span>
               </div>

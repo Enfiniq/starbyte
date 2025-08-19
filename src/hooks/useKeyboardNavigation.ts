@@ -1,28 +1,41 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 function useKeyboardNavigation(shortcutMap: { [key: string]: string }) {
   const router = useRouter();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.shiftKey) {
-        const shortcut = `shift+${e.key.toLowerCase()}`;
-        if (shortcutMap[shortcut]) {
-          e.preventDefault();
-          router.replace(shortcutMap[shortcut]);
-        }
+      if (!e.altKey) return;
+
+      const key = e.key.toLowerCase();
+      const keyCombo = `alt+${key}`;
+
+      const matchedShortcut = Object.keys(shortcutMap).find(
+        (shortcut) => shortcut === keyCombo
+      );
+
+      if (matchedShortcut) {
+        e.preventDefault();
+        e.stopPropagation();
+        router.push(shortcutMap[matchedShortcut]);
       }
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, {
+      capture: true,
+      signal,
+    });
 
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, [router, shortcutMap]);
-
-  return null;
 }
-
 export default useKeyboardNavigation;

@@ -17,7 +17,7 @@ const AvatarGallery = ({
         {images.map((src, index) => (
           <button
             key={`Image-${index}`}
-            className="relative flex h-20 w-20 rounded-full p-2 hover:shadow-lg hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"
+            className="relative flex h-20 w-20 rounded-full p-2 hover:shadow-lg hover:bg-primary/40 dark:hover:bg-primary/40 cursor-pointer"
             type="button"
             onClick={() => setPreBuildAvatar(src)}
           >

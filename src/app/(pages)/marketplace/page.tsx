@@ -34,11 +34,11 @@ export default function MarketplacePage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="py-8">
       <h1 className="text-2xl font-bold mb-4">Marketplace</h1>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {loading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="space-y-3">
               <Skeleton className="w-full aspect-square" />
@@ -49,7 +49,7 @@ export default function MarketplacePage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {items.map((reward, idx) => (
             <RewardsListing key={reward.id} reward={reward} index={idx} />
           ))}
