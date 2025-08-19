@@ -55,22 +55,18 @@ function Page() {
 
   if (error) {
     return (
-      <MaxWidthWrapper className="h-[80vh] w-full py-20 mx-auto text-center flex flex-col justify-center items-center max-w-3xl">
+      <div className="h-[80vh] w-full py-20 mx-auto text-center flex flex-col justify-center items-center max-w-3xl">
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
           Error Finding User with the starName{" "}
           <span className="text-skin-base-600 dark:text-skin-base-500">
             {starName}
           </span>
         </h1>
-      </MaxWidthWrapper>
+      </div>
     );
   }
 
-  return (
-    <MaxWidthWrapper>
-      {profile && <StarsProfilePublic profile={profile} />}
-    </MaxWidthWrapper>
-  );
+  return <>{profile && <StarsProfilePublic profile={profile} />}</>;
 }
 
 export default Page;

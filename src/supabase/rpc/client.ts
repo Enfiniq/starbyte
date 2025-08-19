@@ -170,3 +170,44 @@ export async function updateStarProfile(params: {
   }
   return data as { success: boolean; error?: string };
 }
+
+export async function getLeaderboardPage(params?: {
+  limit?: number;
+  offset?: number;
+}) {
+  const supabase = createBrowserClient();
+  const { data, error } = await supabase.rpc("get_leaderboard", {
+    p_metric: "total_bytes",
+    p_limit: params?.limit ?? 20,
+    p_offset: params?.offset ?? 0,
+  });
+  if (error || !data) {
+    console.error("Get leaderboard error:", error);
+    return {
+      success: false,
+      items: [],
+      has_more: false,
+      next_offset: 0,
+      total: 0,
+    } as const;
+  }
+  return data as {
+    success: boolean;
+    items: Array<{
+      rank: number;
+      id: string;
+      starname: string;
+      display_name?: string | null;
+      avatar?: string | null;
+      is_premium?: boolean | null;
+      stardust?: number | null;
+      level?: number | null;
+      totalbytescompleted?: number | null;
+      current_streak?: number | null;
+      longest_streak?: number | null;
+    }>;
+    has_more: boolean;
+    next_offset: number;
+    total: number;
+  };
+}
