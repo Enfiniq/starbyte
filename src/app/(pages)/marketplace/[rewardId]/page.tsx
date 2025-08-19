@@ -8,6 +8,7 @@ import {
   type PurchaseRewardResult,
 } from "@/supabase/rpc/client";
 import { Check, Shield } from "lucide-react";
+import ImageSlider from "@/components/ImageSlider";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -48,6 +49,7 @@ export default function RewardPage() {
       setReward(res.reward);
       setError(null);
     }
+    console.log("response", res);
     setLoading(false);
   };
 
@@ -122,6 +124,10 @@ export default function RewardPage() {
     await refresh();
     setPurchasing(false);
   };
+
+  const urls: string[] = Array.isArray(reward?.image_url)
+    ? reward.image_url
+    : [];
 
   return (
     <MaxWidthWrapper className="bg-white">
@@ -232,16 +238,13 @@ export default function RewardPage() {
           </div>
 
           <div className="mt-10 lg:col-start-2 lg:row-span-2 lg:mt-0 lg:self-center">
-            <div className="aspect-square rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
-              {reward?.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={reward.image_url}
-                  alt={reward.title}
-                  className="object-cover w-full h-full"
-                />
+            <div className="aspect-square rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center w-full">
+              {urls.length > 0 ? (
+                <ImageSlider urls={urls} />
               ) : (
-                <div className="text-muted-foreground">No image</div>
+                <div className="absolute inset-0 grid place-items-center text-xs text-zinc-500">
+                  No image
+                </div>
               )}
             </div>
           </div>

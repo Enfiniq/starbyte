@@ -26,7 +26,7 @@ export async function resolveDelivery(payload: {
     id: string;
     title: string;
     description?: string | null;
-    image_url?: string | null;
+    image_url?: string[] | null;
     delivery_instructions?: string | null;
     price?: number;
   };

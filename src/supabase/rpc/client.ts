@@ -1,5 +1,92 @@
 import { createBrowserClient } from "@/supabase/client";
 
+export type RewardSummary = {
+  id: string;
+  lister_id: string;
+  title: string;
+  description: string;
+  price: number;
+  type: string;
+  image_url?: string[] | null;
+  is_active: boolean;
+  usage_type: string;
+  delivery_type: string;
+  delivery_instructions?: string | null;
+  stock_total: number;
+  used_total: number;
+};
+
+export type PurchaseRewardResult =
+  | ({ success: true } & (
+      | { type: "code"; data: { code: string } }
+      | { type: "link"; data: { link: string } }
+      | {
+          type: "fetch";
+          data: {
+            fetch: {
+              url: string;
+              method?: string;
+              headers?: Record<string, string>;
+              body?: unknown;
+            };
+          };
+        }
+    ) & { receipt_id?: string })
+  | { success: false; error: string };
+
+export type RewardListItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  type: string;
+  image_url?: string[] | null;
+  is_active: boolean;
+  usage_type: string;
+  delivery_type: string;
+  delivery_instructions?: string | null;
+  delivery_data?: Array<{
+    stock?: number | null;
+    used?: number | null;
+  } | null> | null;
+  lister_id?: string | null;
+  lister_avatar_url?: string | null;
+  lister_display_name?: string | null;
+  lister_star_name?: string | null;
+};
+
+export async function getRewards(params?: {
+  limit?: number;
+  offset?: number;
+  onlyActive?: boolean;
+}) {
+  const supabase = createBrowserClient();
+  const { data, error } = await supabase.rpc("get_rewards", {
+    p_limit: params?.limit ?? 50,
+    p_offset: params?.offset ?? 0,
+    p_only_active: params?.onlyActive ?? true,
+  });
+  if (error || !data) {
+    console.error("Get rewards error:", error);
+    return {
+      success: false,
+      items: [],
+      error: "Error fetching rewards",
+    } as const;
+  }
+  if (!data.success) {
+    return {
+      success: false,
+      items: [],
+      error: data.error ?? "Error fetching rewards",
+    } as const;
+  }
+  return {
+    success: true,
+    items: (data.items ?? []) as RewardListItem[],
+  } as const;
+}
+
 export async function getStarPublicProfile({
   starId,
   starname,
@@ -217,4 +304,33 @@ export async function getLeaderboardPage(params?: {
     next_offset: number;
     total: number;
   };
+}
+
+export async function getRewardById(rewardId: string) {
+  const supabase = createBrowserClient();
+  const { data, error } = await supabase.rpc("get_reward_by_id", {
+    p_reward_id: rewardId,
+  });
+  if (error || !data) {
+    console.error("Get reward by id error:", error);
+    return { success: false, error: "Error fetching reward" } as const;
+  }
+  return data as {
+    success: boolean;
+    error?: string;
+    reward?: RewardSummary;
+  };
+}
+
+export async function purchaseReward(buyerId: string, rewardId: string) {
+  const supabase = createBrowserClient();
+  const { data, error } = await supabase.rpc("purchase_reward", {
+    p_buyer_id: buyerId,
+    p_reward_id: rewardId,
+  });
+  if (error || !data) {
+    console.error("Purchase reward error:", error);
+    return { success: false, error: "Error purchasing reward" } as const;
+  }
+  return data as PurchaseRewardResult;
 }
