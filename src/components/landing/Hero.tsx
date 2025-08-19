@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 
 import Button from "./Button";
 import VideoPreview from "./VideoPreview";
+import Loader from "../loader";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -108,16 +109,7 @@ const Hero = () => {
 
   return (
     <div className="relative h-dvh w-screen overflow-x-hidden">
-      {loading && (
-        <div className="flex-center absolute z-[100] h-dvh w-screen overflow-hidden bg-black">
-          {/* https://uiverse.io/G4b413l/tidy-walrus-92 */}
-          <div className="three-body">
-            <div className="three-body__dot"></div>
-            <div className="three-body__dot"></div>
-            <div className="three-body__dot"></div>
-          </div>
-        </div>
-      )}
+      {loading && <Loader className="bg-white dark:bg-black" />}
 
       <div
         id="video-frame"
@@ -198,8 +190,8 @@ const Hero = () => {
         </div>
       </div>
 
-      <h1 className="special-font hero-heading absolute bottom-5 right-5 text-black">
-        ST<b>A</b>RBYTE
+      <h1 className="special-font hero-heading absolute bottom-5 right-5 text-primary text-7xl sm:text-8xl lg:text-9xl">
+        <b>STARBYTE</b>
       </h1>
     </div>
   );

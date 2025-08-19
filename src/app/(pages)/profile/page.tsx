@@ -25,6 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import Loader from "@/components/loader";
 
 function makeFileChangeHandler(
   star: Star | null,
@@ -104,10 +105,10 @@ function InfoBlock({
         />
       </h2>
       <p className="text-skin-muted-500 dark:text-skin-muted-400 flex flex-row">
-        {bio}
+        Bio: {bio}
       </p>
       <p className="text-skin-muted-500 dark:text-skin-muted-400 flex flex-row">
-        {displayName || star?.displayName || ""}
+        Display Name: {displayName || star?.displayName || ""}
       </p>
     </div>
   );
@@ -164,11 +165,11 @@ function AvatarPreview({
         />
         <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
       </Avatar>
-      <div className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 flex-center bg-slate-100/50 dark:bg-slate-900/50">
+      <div className="pointer-events-none absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 flex justify-center items-center bg-slate-100/50 dark:bg-slate-900/50">
         <CiCamera />
       </div>
       {isImageLoading && (
-        <div className="absolute inset-0 rounded-full flex-center bg-black/40">
+        <div className="absolute inset-0 rounded-full flex justify-center items-center bg-black/40">
           <Loader2 className="animate-spin h-6 w-6 text-white" />
         </div>
       )}
@@ -268,7 +269,12 @@ function AvatarEditor({
 export default function Page() {
   const { star, loading } = useStar();
   const router = useRouter();
-  const didPrefill = React.useRef(false);
+  const lastStarSnapshot = React.useRef<{
+    starName: string;
+    displayName: string;
+    bio: string;
+    avatar: string;
+  } | null>(null);
 
   const {
     starName,
@@ -288,13 +294,46 @@ export default function Page() {
   const [confirmSpendOpen, setConfirmSpendOpen] = useState(false);
 
   useEffect(() => {
-    if (!star || didPrefill.current) return;
-    setStarName(star.starName || "");
-    setDisplayName(star.displayName || "");
-    setBio(star.bio || "");
-    setAvatar(star.avatar || "");
-    didPrefill.current = true;
-  }, [star, setStarName, setDisplayName, setBio, setAvatar]);
+    router.refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!star) return;
+    const snapshot = {
+      starName: star.starName || "",
+      displayName: star.displayName || "",
+      bio: star.bio || "",
+      avatar: star.avatar || "",
+    };
+    const prev = lastStarSnapshot.current;
+    const draftMatchesPrev =
+      prev &&
+      prev.starName === starName &&
+      prev.displayName === displayName &&
+      prev.bio === bio &&
+      prev.avatar === avatar;
+
+    if (!prev || draftMatchesPrev) {
+      setStarName(snapshot.starName);
+      setDisplayName(snapshot.displayName);
+      setBio(snapshot.bio);
+      setAvatar(snapshot.avatar);
+      lastStarSnapshot.current = snapshot;
+    } else {
+      lastStarSnapshot.current = snapshot;
+    }
+  }, [
+    star,
+    starName,
+    displayName,
+    bio,
+    avatar,
+    setStarName,
+    setDisplayName,
+    setBio,
+    setAvatar,
+  ]);
 
   const setPreBuildAvatar = (newAvatar: string) => {
     setAvatar(newAvatar);
@@ -338,6 +377,11 @@ export default function Page() {
         toast(res?.error || "Failed to update profile");
       } else {
         toast("Profile updated");
+        setStarName(parsed.data.starName);
+        setDisplayName(parsed.data.displayName);
+        setBio(parsed.data.bio ?? "");
+        setAvatar(parsed.data.avatar ?? "");
+        router.refresh();
         router.push("/home");
       }
     } catch (e: unknown) {
@@ -360,15 +404,7 @@ export default function Page() {
 
   return (
     <>
-      {loading && (
-        <div className="flex-center absolute z-[100] h-dvh w-screen overflow-hidden bg-black">
-          <div className="three-body">
-            <div className="three-body__dot"></div>
-            <div className="three-body__dot"></div>
-            <div className="three-body__dot"></div>
-          </div>
-        </div>
-      )}
+      {loading && <Loader className="bg-white dark:bg-black" />}
 
       <div className="mx-auto py-12 mb-12 px-4 md:px-6 lg:px-8">
         {!loading && (
