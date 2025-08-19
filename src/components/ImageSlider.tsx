@@ -60,7 +60,7 @@ const ImageSlider = ({ urls }: ImageSliderProps) => {
   }, [swiper, safeUrls]);
 
   const activeStyles =
-    "active:scale-[0.97] grid opacity-100 hover:scale-105 absolute top-1/2 -translate-y-1/2 aspect-square h-8 w-8 z-50 place-items-center rounded-full border-2 bg-white border-zinc-300";
+    "active:scale-[0.97] grid opacity-100 hover:scale-105 absolute top-1/2 -translate-y-1/2 aspect-square h-8 w-8 z-50 place-items-center rounded-full border-2 bg-white dark:bg-black border-zinc-300";
   const inactiveStyles = "hidden text-gray-400";
 
   if (safeUrls.length === 0) {
@@ -79,10 +79,9 @@ const ImageSlider = ({ urls }: ImageSliderProps) => {
             e.preventDefault();
             swiper?.slideNext();
           }}
-          className={cn(activeStyles, "right-3 transition", {
+          className={cn(activeStyles, "right-3 transition cursor-pointer", {
             [inactiveStyles]: slideConfig.isEnd,
-            "hover:bg-primary-300 text-primary-800 opacity-100":
-              !slideConfig.isEnd,
+            "opacity-100": !slideConfig.isEnd,
           })}
           aria-label="next image"
         >
@@ -93,10 +92,9 @@ const ImageSlider = ({ urls }: ImageSliderProps) => {
             e.preventDefault();
             swiper?.slidePrev();
           }}
-          className={cn(activeStyles, "left-3 transition", {
+          className={cn(activeStyles, "left-3 transition cursor-pointer", {
             [inactiveStyles]: slideConfig.isBeginning,
-            "hover:bg-primary-300 text-primary-800 opacity-100":
-              !slideConfig.isBeginning,
+            "opacity-100": !slideConfig.isBeginning,
           })}
           aria-label="previous image"
         >
