@@ -111,7 +111,6 @@ const StarAccountMenu = () => {
           <DropdownMenuSeparator />
 
           {(() => {
-            const profilePath = `/star/${starName}`;
             const menuLookup: Record<
               string,
               {
@@ -121,7 +120,7 @@ const StarAccountMenu = () => {
               }
             > = {
               home: { label: "Home", href: "/home", icon: FaHome },
-              profile: { label: "Profile", href: profilePath, icon: FaUser },
+              profile: { label: "Profile", href: "/profile", icon: FaUser },
               bytes: { label: "Bytes", href: "/bytes", icon: FaDumbbell },
               stars: { label: "Stars", href: "/stars", icon: FaStar },
               marketplace: {
