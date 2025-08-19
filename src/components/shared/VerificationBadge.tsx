@@ -21,7 +21,7 @@ export const VBadge = {
   },
 } as const;
 
-type StarLike = typeof DEFAULT_STAR_DATA & { isPremium?: boolean };
+type StarLike = Partial<typeof DEFAULT_STAR_DATA> & { isPremium?: boolean };
 
 interface VerificationBadgeProps {
   star: StarLike | null;
@@ -57,7 +57,7 @@ function VerificationBadge({
         <span
           className={`inline-flex items-center ${starBadge.textClass || ""}`}
         >
-          {star?.starName}
+          {star?.displayName ?? star?.starName}
         </span>
       </span>
 

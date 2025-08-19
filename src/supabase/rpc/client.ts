@@ -1,5 +1,95 @@
 import { createBrowserClient } from "@/supabase/client";
 
+export async function getStarPublicProfile({
+  starId,
+  starname,
+}: {
+  starId?: string;
+  starname?: string;
+}) {
+  const supabase = createBrowserClient();
+  const { data, error } = await supabase.rpc("get_star_public_profile", {
+    p_star_id: starId ?? null,
+    p_starname: starname ?? null,
+  });
+  if (error) {
+    console.error("Get star public profile error:", error);
+    try {
+      const selectCols =
+        "id, star_name, display_name, bio, avatar, is_premium, stardust, level, total_bytes_completed, current_streak, longest_streak";
+      const query = starId
+        ? supabase.from("stars").select(selectCols).eq("id", starId).single()
+        : supabase
+            .from("stars")
+            .select(selectCols)
+            .eq("star_name", starname)
+            .single();
+      const { data: fallbackStar, error: fallbackErr } = await query;
+      if (fallbackErr || !fallbackStar) {
+        return { success: false, error: "Error fetching profile" } as const;
+      }
+      return {
+        success: true,
+        star: {
+          id: fallbackStar.id,
+          starname: fallbackStar.star_name,
+          display_name: fallbackStar.display_name,
+          bio: fallbackStar.bio,
+          avatar: fallbackStar.avatar,
+          is_premium: fallbackStar.is_premium,
+          stardust: fallbackStar.stardust,
+          level: fallbackStar.level,
+          totalbytescompleted: fallbackStar.total_bytes_completed,
+          current_streak: fallbackStar.current_streak,
+          longest_streak: fallbackStar.longest_streak,
+        },
+        bytes: [],
+        collections: [],
+        proofs: [],
+        regrets: [],
+        notes: [],
+        rewards: [],
+        followers: [],
+        following: [],
+        participations: [],
+      } as const;
+    } catch (err) {
+      console.error("Fallback star fetch failed:", err);
+      return { success: false, error: "Error fetching profile" } as const;
+    }
+  }
+  if (!data?.success) {
+    return { success: false, error: data?.error || "Not found" } as const;
+  }
+
+  return {
+    success: true,
+    star: data.star,
+    bytes: data.bytes,
+    collections: data.collections,
+    proofs: data.proofs,
+    regrets: data.regrets,
+    notes: data.notes,
+    rewards: data.rewards,
+    followers: data.followers,
+    following: data.following,
+    participations: data.participations,
+  } as const;
+}
+
+export async function followStar(followerId: string, followingId: string) {
+  const supabase = createBrowserClient();
+  const { data, error } = await supabase.rpc("follow_star", {
+    p_follower_id: followerId,
+    p_following_id: followingId,
+  });
+  if (error) {
+    console.error("Follow star error:", error);
+    return { success: false, error: "Failed to follow" } as const;
+  }
+  return data as { success: boolean; error?: string; message?: string };
+}
+
 export async function checkUsernameUnique(username: string) {
   const supabase = createBrowserClient();
   const { data, error } = await supabase.rpc("check_username_unique", {

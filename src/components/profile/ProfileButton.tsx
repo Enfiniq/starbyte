@@ -45,7 +45,7 @@ const ProfileButton = ({
         "group relative z-10 w-fit overflow-hidden rounded-full font-general text-xs uppercase",
         sizeClass,
         variantClass,
-        disabled && "opacity-50 cursor-not-allowed",
+        disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
         containerClass
       )}
     >
