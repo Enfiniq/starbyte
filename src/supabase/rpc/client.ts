@@ -42,6 +42,8 @@ export async function getStarPublicProfile({
           totalbytescompleted: fallbackStar.total_bytes_completed,
           current_streak: fallbackStar.current_streak,
           longest_streak: fallbackStar.longest_streak,
+          followers_count: 0,
+          following_count: 0,
         },
         bytes: [],
         collections: [],
@@ -85,9 +87,14 @@ export async function followStar(followerId: string, followingId: string) {
   });
   if (error) {
     console.error("Follow star error:", error);
-    return { success: false, error: "Failed to follow" } as const;
+    return { success: false, error: "Failed to follow/unfollow" } as const;
   }
-  return data as { success: boolean; error?: string; message?: string };
+  return data as {
+    success: boolean;
+    error?: string;
+    message?: string;
+    action?: "followed" | "unfollowed";
+  };
 }
 
 export async function checkUsernameUnique(username: string) {

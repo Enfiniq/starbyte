@@ -1,7 +1,6 @@
 "use client";
 
 import Loader from "@/components/loader";
-import MaxWidthWrapper from "@/components/shared/MaxWidthWrapper";
 import StarsProfilePublic, {
   StarPublicProfile,
   ByteSummary,

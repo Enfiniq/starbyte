@@ -38,6 +38,8 @@ export type StarSummary = {
   totalbytescompleted: number | null;
   current_streak: number | null;
   longest_streak: number | null;
+  followers_count?: number | null;
+  following_count?: number | null;
 };
 
 export type ByteSummary = {
@@ -73,7 +75,6 @@ export default function StarsProfilePublic({
     regrets = [],
     notes = [],
     rewards = [],
-    following = [],
     participations = [],
   } = profile;
 
@@ -90,8 +91,20 @@ export default function StarsProfilePublic({
     useState<(typeof contentTabs)[number]>("Bytes");
 
   const [followerCount, setFollowerCount] = useState<number>(
-    profile.followers?.length ?? 0
+    typeof star.followers_count === "number" && star.followers_count !== null
+      ? star.followers_count
+      : 0
   );
+
+  const [localFollowers, setLocalFollowers] = useState(profile.followers || []);
+  const [followLoading, setFollowLoading] = useState<boolean>(false);
+
+  const isFollowing = React.useMemo(() => {
+    if (!me?.id) return false;
+    return (localFollowers as Array<{ follower_id: string }>).some(
+      (follow) => follow.follower_id === me.id
+    );
+  }, [me?.id, localFollowers]);
 
   const counts = useMemo(
     () => ({
@@ -101,7 +114,11 @@ export default function StarsProfilePublic({
       notes: notes?.length ?? 0,
       rewards: rewards?.length ?? 0,
       followers: followerCount,
-      following: following?.length ?? 0,
+      following:
+        typeof star.following_count === "number" &&
+        star.following_count !== null
+          ? star.following_count
+          : 0,
       participations: participations?.length ?? 0,
     }),
     [
@@ -111,16 +128,22 @@ export default function StarsProfilePublic({
       notes,
       rewards,
       followerCount,
-      following,
+      star.following_count,
       participations,
     ]
   );
 
-  type BadgeStar = { starName: string; level: number; isPremium?: boolean };
+  type BadgeStar = {
+    starName: string;
+    displayName?: string;
+    level: number;
+    isPremium?: boolean;
+  };
+
   const starForBadge: BadgeStar = useMemo(
     () => ({
       starName: star.starname,
-      displayName: star.display_name,
+      displayName: star.display_name ?? undefined,
       level: star.level ?? 0,
       isPremium: Boolean(star.is_premium),
     }),
@@ -281,31 +304,61 @@ export default function StarsProfilePublic({
             </div>
 
             <div className="pt-2">
-              <ProfileButton
-                title="Follow"
-                variant="primary"
-                size="sm"
-                ariaLabel="Follow star"
-                onClick={async () => {
-                  if (!me?.id) {
-                    toast.error("Please sign in to follow");
-                    return;
-                  }
-                  if (me.id === star.id) {
-                    toast.message("You can't follow yourself");
-                    return;
-                  }
-                  const res = await followStar(me.id, star.id);
-                  if (!res.success) {
-                    toast.error(res.error || "Failed to follow");
-                    return;
-                  }
-                  if (!res.message) {
-                    setFollowerCount((c) => c + 1);
-                  }
-                  toast.success(res.message || "Followed");
-                }}
-              />
+              {me?.id === star.id ? (
+                <ProfileButton
+                  title="Your Profile"
+                  variant="secondary"
+                  size="sm"
+                  ariaLabel="Your profile"
+                  disabled={true}
+                  onClick={() => {}}
+                />
+              ) : (
+                <ProfileButton
+                  title={isFollowing ? "Unfollow" : "Follow"}
+                  variant={isFollowing ? "secondary" : "primary"}
+                  size="sm"
+                  ariaLabel={isFollowing ? "Unfollow star" : "Follow star"}
+                  disabled={followLoading}
+                  onClick={async () => {
+                    if (!me?.id) {
+                      toast.error("Please sign in to follow");
+                      return;
+                    }
+
+                    setFollowLoading(true);
+
+                    const res = await followStar(me.id, star.id);
+                    if (!res.success) {
+                      toast.error(res.error || "Failed to follow/unfollow");
+                    } else {
+                      if (res.action === "followed") {
+                        setFollowerCount((c) => c + 1);
+                        setLocalFollowers((prev) => [
+                          ...prev,
+                          {
+                            id: `temp-${Date.now()}`,
+                            follower_id: me.id,
+                            following_id: star.id,
+                            created_at: new Date().toISOString(),
+                          },
+                        ]);
+                        toast.success("Followed successfully");
+                      } else if (res.action === "unfollowed") {
+                        setFollowerCount((c) => Math.max(0, c - 1));
+                        setLocalFollowers((prev) =>
+                          (prev as Array<{ follower_id: string }>).filter(
+                            (follow) => follow.follower_id !== me.id
+                          )
+                        );
+                        toast.success("Unfollowed successfully");
+                      }
+                    }
+
+                    setFollowLoading(false);
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
