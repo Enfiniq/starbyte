@@ -334,3 +334,60 @@ export async function purchaseReward(buyerId: string, rewardId: string) {
   }
   return data as PurchaseRewardResult;
 }
+
+export type ByteCard = {
+  id: string;
+  title: string;
+  created_at?: string;
+  star_name?: string;
+  display_name?: string | null;
+  avatar?: string | null;
+  current_participants?: number | null;
+  stardust_reward?: number | null;
+  preview_image_url?: string | null;
+  byte_type?: string | null;
+  byte_difficulty?: string | null;
+  estimated_duration_minutes?: number | null;
+  required_proofs_count?: number | null;
+  recurrence_type?: string | null;
+  duration_days?: number | null;
+};
+
+export type CollectionCard = {
+  id: string;
+  title: string;
+  image_url?: string | null;
+  total_participants: number;
+  bytes_count: number;
+};
+
+export type HomepageBytesData = {
+  success: boolean;
+  error?: string;
+  collections?: CollectionCard[];
+  featured?: ByteCard[];
+  hot?: ByteCard[];
+  highest?: ByteCard[];
+  latest?: ByteCard[];
+  rewards?: RewardListItem[];
+};
+
+export async function getHomepageBytes(params?: {
+  type?: "all" | "physical" | "digital";
+  sectionLimit?: number;
+  latestLimit?: number;
+  rewardsLimit?: number;
+}) {
+  const supabase = createBrowserClient();
+  const { data, error } = await supabase.rpc("get_homepage_bytes", {
+    p_type_filter: params?.type ?? "all",
+    p_section_limit: params?.sectionLimit ?? 10,
+    p_latest_limit: params?.latestLimit ?? 24,
+    p_rewards_limit: params?.rewardsLimit ?? 12,
+  });
+  if (error || !data) {
+    console.error("get_homepage_bytes error:", error);
+    return { success: false, error: "Error fetching homepage bytes" } as const;
+  }
+  return data as HomepageBytesData;
+}
