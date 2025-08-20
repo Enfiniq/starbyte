@@ -342,15 +342,34 @@ export type ByteCard = {
   star_name?: string;
   display_name?: string | null;
   avatar?: string | null;
+  is_premium?: boolean | null; 
+  level?: number | null; 
   current_participants?: number | null;
   stardust_reward?: number | null;
-  preview_image_url?: string | null;
+  preview_image_url?: string[] | null; 
   byte_type?: string | null;
   byte_difficulty?: string | null;
+  byte_category?: string | null;
   estimated_duration_minutes?: number | null;
   required_proofs_count?: number | null;
   recurrence_type?: string | null;
   duration_days?: number | null;
+  source_type?: "hot" | "highest" | "latest" | "following" | "embedding" | null;
+  description?: string | null;
+  is_active?: boolean | null;
+  max_participants?: number | null;
+  auto_approve?: boolean | null;
+  requires_proof?: boolean | null;
+  proof_instructions?: string | null;
+  is_featured?: boolean | null;
+  completions_count?: number | null;
+  bonus_stardust?: number | null;
+  max_bonus_recipients?: number | null;
+  bonus_recipients_count?: number | null;
+  custom_recurrence_days?: number | null;
+  expires_at?: string | null;
+  tags?: string[] | null;
+  collection_id?: string | null;
 };
 
 export type CollectionCard = {
@@ -365,29 +384,47 @@ export type HomepageBytesData = {
   success: boolean;
   error?: string;
   collections?: CollectionCard[];
-  featured?: ByteCard[];
-  hot?: ByteCard[];
-  highest?: ByteCard[];
-  latest?: ByteCard[];
+  bytes?: ByteCard[];
   rewards?: RewardListItem[];
 };
 
 export async function getHomepageBytes(params?: {
   type?: "all" | "physical" | "digital";
-  sectionLimit?: number;
-  latestLimit?: number;
-  rewardsLimit?: number;
+  totalBytes?: number;
+  userId?: string;
 }) {
   const supabase = createBrowserClient();
+
+  let userId = params?.userId;
+  if (!userId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    userId = user?.id || undefined;
+  }
+
   const { data, error } = await supabase.rpc("get_homepage_bytes", {
     p_type_filter: params?.type ?? "all",
-    p_section_limit: params?.sectionLimit ?? 10,
-    p_latest_limit: params?.latestLimit ?? 24,
-    p_rewards_limit: params?.rewardsLimit ?? 12,
+    p_total_bytes: params?.totalBytes ?? 50,
+    p_user_id: userId || null,
   });
+
   if (error || !data) {
     console.error("get_homepage_bytes error:", error);
     return { success: false, error: "Error fetching homepage bytes" } as const;
   }
+
+  if (data?.success && data?.bytes) {
+    console.log(`Homepage bytes loaded: ${data.bytes.length} items`);
+    console.log(
+      "Source distribution:",
+      data.bytes.reduce((acc: Record<string, number>, byte: ByteCard) => {
+        const source = byte.source_type || "unknown";
+        acc[source] = (acc[source] || 0) + 1;
+        return acc;
+      }, {})
+    );
+  }
+
   return data as HomepageBytesData;
 }

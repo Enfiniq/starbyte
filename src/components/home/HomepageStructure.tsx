@@ -1,6 +1,6 @@
 "use client";
 
-// import BytesRenderer from "@/components/home/BytesRenderer";
+import BytesRenderer from "@/components/home/BytesRenderer";
 import { useCallback, useEffect, useState } from "react";
 import { Target, Dumbbell, MonitorPlay } from "lucide-react";
 import FilterOptions from "@/components/home/FilterOptions";
@@ -10,6 +10,7 @@ import {
   HomepageBytesData,
   RewardListItem,
 } from "@/supabase/rpc/client";
+import Loader from "../loader";
 
 export interface FilterOption {
   id: number;
@@ -52,6 +53,7 @@ export default function HomepageStructure() {
   const [type, setType] = useState<string>("all");
   const [rewards, setRewards] = useState<RewardListItem[]>([]);
   const [bytesData, setBytesData] = useState<HomepageBytesData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const handleActiveOptionChange = useCallback((value: string) => {
     const index = filterOpts.findIndex((category) => category.value === value);
@@ -61,33 +63,48 @@ export default function HomepageStructure() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
     (async () => {
-      const bytes = await getHomepageBytes({
-        type: type as "all" | "physical" | "digital",
-      });
-      setBytesData(bytes);
-      if (bytes?.success && Array.isArray(bytes.rewards))
-        setRewards(bytes.rewards);
-      console.log(bytes);
+      try {
+        const bytes = await getHomepageBytes({
+          type: type as "all" | "physical" | "digital",
+        });
+        if (cancelled) return;
+        console.log("Bytes", bytes);
+        setBytesData(bytes);
+        if (bytes?.success && Array.isArray(bytes.rewards))
+          setRewards(bytes.rewards);
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [type]);
+
+  if (isLoading) {
+    return <Loader />;
+  }
 
   return (
     <>
+      <div className="mb-8">
+        <BannerSlide rewards={rewards} />
+      </div>
       <div className="trending_bx gap-20">
         <FilterOptions
           handleActiveOptionChange={handleActiveOptionChange}
           activeOption={filterOpts.find((opt) => opt.value === type)?.id || 1}
         />
       </div>
-      <div className="mb-8">
-        <BannerSlide rewards={rewards} />
-      </div>
-      {/* <BytesRenderer
+
+      <BytesRenderer
         setCategories={setCategories}
         categories={categories}
         data={bytesData}
-      /> */}
+      />
     </>
   );
 }

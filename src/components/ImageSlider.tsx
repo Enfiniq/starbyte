@@ -11,13 +11,28 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ImageSliderProps {
   urls: string[];
+  aspectRatio?: "square" | "video" | "auto";
 }
 
-const ImageSlider = ({ urls }: ImageSliderProps) => {
+const ImageSlider = ({ urls, aspectRatio = "square" }: ImageSliderProps) => {
   const safeUrls = useMemo(
     () => (Array.isArray(urls) ? urls.filter(Boolean) : []),
     [urls]
   );
+
+  // Get aspect ratio class based on prop
+  const getAspectClass = () => {
+    switch (aspectRatio) {
+      case "video":
+        return "aspect-video";
+      case "square":
+        return "aspect-square";
+      case "auto":
+        return "h-full w-full";
+      default:
+        return "aspect-square";
+    }
+  };
   const normalizeUrl = (u: string) => {
     if (!u) return u;
     const trimmed = u.trim();
@@ -65,14 +80,18 @@ const ImageSlider = ({ urls }: ImageSliderProps) => {
 
   if (safeUrls.length === 0) {
     return (
-      <div className="group relative bg-zinc-100 dark:bg-zinc-900 aspect-square overflow-hidden rounded-xl grid place-items-center text-xs text-zinc-500 dark:text-zinc-400">
+      <div
+        className={`group relative bg-zinc-100 dark:bg-zinc-900 ${getAspectClass()} overflow-hidden rounded-xl grid place-items-center text-xs text-zinc-500 dark:text-zinc-400`}
+      >
         No image
       </div>
     );
   }
 
   return (
-    <div className="group relative bg-zinc-100 dark:bg-zinc-900 aspect-square overflow-hidden rounded-xl">
+    <div
+      className={`group relative bg-zinc-100 dark:bg-zinc-900 ${getAspectClass()} overflow-hidden rounded-xl`}
+    >
       <div className="absolute z-10 inset-0 opacity-0 group-hover:opacity-100 transition">
         <button
           onClick={(e) => {
