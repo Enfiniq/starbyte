@@ -342,17 +342,19 @@ export type ByteCard = {
   star_name?: string;
   display_name?: string | null;
   avatar?: string | null;
-  is_premium?: boolean | null; 
-  level?: number | null; 
+  is_premium?: boolean | null;
+  level?: number | null;
   current_participants?: number | null;
   stardust_reward?: number | null;
-  preview_image_url?: string[] | null; 
+  preview_image_url?: string[] | null;
   byte_type?: string | null;
   byte_difficulty?: string | null;
   byte_category?: string | null;
   estimated_duration_minutes?: number | null;
   required_proofs_count?: number | null;
   recurrence_type?: string | null;
+  custom_recurrence_days?: number | null;
+  challenge_type?: string | null;
   duration_days?: number | null;
   source_type?: "hot" | "highest" | "latest" | "following" | "embedding" | null;
   description?: string | null;
@@ -366,7 +368,6 @@ export type ByteCard = {
   bonus_stardust?: number | null;
   max_bonus_recipients?: number | null;
   bonus_recipients_count?: number | null;
-  custom_recurrence_days?: number | null;
   expires_at?: string | null;
   tags?: string[] | null;
   collection_id?: string | null;
@@ -427,4 +428,349 @@ export async function getHomepageBytes(params?: {
   }
 
   return data as HomepageBytesData;
+}
+
+export type ParticipatingByte = {
+  id: string;
+  title: string;
+  description: string | null;
+  stardust_reward: number | null;
+  expires_at?: string | null;
+  preview_image_url?: string[] | null;
+  created_at?: string | null;
+  requires_proof?: boolean | null;
+  duration_days?: number | null;
+  creator: {
+    star_name: string;
+    display_name?: string | null;
+    avatar?: string | null;
+    is_verified?: boolean | null;
+  };
+  participation: {
+    id: string;
+    status: "active" | "completed" | string;
+    joined_at: string;
+    completed_at?: string | null;
+    current_proof_count: number;
+    required_proof_count: number;
+    stardust_earned?: number | null;
+    progress_percentage: number;
+  };
+};
+
+export async function getUserParticipatingBytes(params: {
+  starId?: string;
+  status?: "active" | "completed" | string | null;
+  limit?: number;
+  offset?: number;
+}) {
+  const supabase = createBrowserClient();
+  let starId = params.starId;
+  if (!starId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    starId = user?.id || undefined;
+  }
+  if (!starId) {
+    return { success: false, bytes: [], error: "Not authenticated" } as const;
+  }
+  const { data, error } = await supabase.rpc("get_user_participating_bytes", {
+    p_star_id: starId,
+    p_status: params.status ?? null,
+    p_limit: params.limit ?? 50,
+    p_offset: params.offset ?? 0,
+  });
+  if (error || !data) {
+    console.error("get_user_participating_bytes error:", error);
+    return {
+      success: false,
+      bytes: [],
+      error: "Error fetching bytes",
+    } as const;
+  }
+  if (!data.success) {
+    return { success: false, bytes: [], error: data.error || "Error" } as const;
+  }
+  return {
+    success: true,
+    bytes: (data.bytes ?? []) as ParticipatingByte[],
+  } as const;
+}
+
+export async function submitByteProof(args: {
+  byteId: string;
+  starId?: string;
+  proofText?: string | null;
+  proofImageUrl?: string | null;
+}) {
+  const supabase = createBrowserClient();
+  let starId = args.starId;
+  if (!starId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    starId = user?.id || undefined;
+  }
+  if (!starId) return { success: false, error: "Not authenticated" } as const;
+  const { data, error } = await supabase.rpc("submit_byte_proof", {
+    p_byte_id: args.byteId,
+    p_star_id: starId,
+    p_proof_text: args.proofText ?? null,
+    p_proof_image_url: args.proofImageUrl ?? null,
+  });
+  if (error || !data) {
+    console.error("submit_byte_proof error:", error);
+    return { success: false, error: "Error submitting proof" } as const;
+  }
+  return data as {
+    success: boolean;
+    error?: string;
+    message?: string;
+    is_completed?: boolean;
+    proof_id?: string;
+  };
+}
+
+export async function createProgressNote(args: {
+  starId?: string;
+  title: string;
+  content: string;
+  imageUrl?: string | null;
+  byteId?: string | null;
+  isQuestion?: boolean;
+}) {
+  const supabase = createBrowserClient();
+  let starId = args.starId;
+  if (!starId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    starId = user?.id || undefined;
+  }
+  if (!starId) return { success: false, error: "Not authenticated" } as const;
+  const { data, error } = await supabase.rpc("create_progress_note", {
+    p_star_id: starId,
+    p_byte_id: args.byteId ?? null,
+    p_title: args.title,
+    p_content: args.content,
+    p_image_url: args.imageUrl ?? null,
+    p_is_question: args.isQuestion ?? false,
+  });
+  if (error || !data) {
+    console.error("create_progress_note error:", error);
+    return { success: false, error: "Error creating note" } as const;
+  }
+  return data as {
+    success: boolean;
+    error?: string;
+    message?: string;
+    note_id?: string;
+  };
+}
+
+export async function createRegret(args: {
+  starId?: string;
+  content: string;
+  title?: string | null;
+  byteId?: string | null;
+}) {
+  const supabase = createBrowserClient();
+  let starId = args.starId;
+  if (!starId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    starId = user?.id || undefined;
+  }
+  if (!starId) return { success: false, error: "Not authenticated" } as const;
+  const { data, error } = await supabase.rpc("create_regret", {
+    p_star_id: starId,
+    p_byte_id: args.byteId ?? null,
+    p_title: args.title ?? null,
+    p_content: args.content,
+  });
+  if (error || !data) {
+    console.error("create_regret error:", error);
+    return { success: false, error: "Error creating regret" } as const;
+  }
+  return data as {
+    success: boolean;
+    error?: string;
+    message?: string;
+    regret_id?: string;
+  };
+}
+
+export async function acceptByteChallenge(args: {
+  byteId: string;
+  starId?: string;
+}) {
+  const supabase = createBrowserClient();
+  let starId = args.starId;
+  if (!starId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    starId = user?.id || undefined;
+  }
+  if (!starId) return { success: false, error: "Not authenticated" } as const;
+  const { data, error } = await supabase.rpc("accept_byte_challenge", {
+    p_byte_id: args.byteId,
+    p_star_id: starId,
+  });
+  if (error || !data) {
+    console.error("accept_byte_challenge error:", error);
+    return { success: false, error: "Error accepting byte" } as const;
+  }
+  return data as {
+    success: boolean;
+    error?: string;
+    message?: string;
+    participation_id?: string;
+  };
+}
+
+export type ByteDetailsResponse = {
+  success: boolean;
+  error?: string;
+  byte?: ByteDetails;
+  comments?: ByteComment[];
+  proofs?: ByteProof[];
+  progress_notes?: ProgressNote[];
+  regrets?: Regret[];
+};
+
+export async function getByteDetails(
+  byteId: string,
+  requestingStarId?: string
+) {
+  const supabase = createBrowserClient();
+  const { data, error } = await supabase.rpc("get_byte_details", {
+    p_byte_id: byteId,
+    p_requesting_star_id: requestingStarId ?? null,
+  });
+  if (error || !data) {
+    console.error("get_byte_details error:", error);
+    return { success: false, error: "Error fetching byte" } as const;
+  }
+  return data as ByteDetailsResponse;
+}
+
+export type ByteAuthor = {
+  star_name: string;
+  display_name?: string | null;
+  avatar?: string | null;
+  is_verified?: boolean | null;
+  level?: number | null;
+  is_premium?: boolean | null;
+};
+
+export type ByteDetails = {
+  id: string;
+  title: string;
+  description: string | null;
+  type?: string | null;
+  category?: string | null;
+  difficulty?: string | null;
+  stardust_reward?: number | null;
+  estimated_duration_minutes?: number | null;
+  max_participants?: number | null;
+  current_participants?: number | null;
+  requires_proof?: boolean | null;
+  auto_approve?: boolean | null;
+  proof_instructions?: string | null;
+  required_proofs_count?: number | null;
+  tags?: string[] | null;
+  duration_days?: number | null;
+  expires_at?: string | null;
+  preview_image_url?: string[] | null;
+  created_at?: string | null;
+  recurrence_type?: string | null;
+  custom_recurrence_days?: number | null;
+  completions_count?: number | null;
+  is_active?: boolean | null;
+  challenge_type?: string | null;
+  creator: ByteAuthor;
+  user_participation?: {
+    id: string;
+    status: string;
+    joined_at: string;
+    completed_at?: string | null;
+    current_proof_count: number;
+    required_proof_count: number;
+    stardust_earned?: number | null;
+  } | null;
+};
+
+export type ByteComment = {
+  id: string;
+  content: string;
+  created_at: string;
+  author: ByteAuthor;
+};
+
+export type ByteProof = {
+  id: string;
+  proof_number: number;
+  proof_text?: string | null;
+  proof_image_url?: string | null;
+  submitted_at: string;
+  is_approved: boolean;
+  approved_at?: string | null;
+  participant: {
+    star_name: string;
+    display_name?: string | null;
+    avatar?: string | null;
+    is_verified?: boolean | null;
+  };
+};
+
+export type ProgressNote = {
+  id: string;
+  title: string;
+  content: string;
+  image_url?: string | null;
+  is_question: boolean;
+  created_at: string;
+  author: ByteAuthor;
+};
+
+export type Regret = {
+  id: string;
+  title?: string | null;
+  content: string;
+  created_at: string;
+  author: ByteAuthor;
+};
+
+export async function addByteComment(args: {
+  byteId: string;
+  starId?: string;
+  content: string;
+}) {
+  const supabase = createBrowserClient();
+  let starId = args.starId;
+  if (!starId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    starId = user?.id || undefined;
+  }
+  if (!starId) return { success: false, error: "Not authenticated" } as const;
+  const { data, error } = await supabase.rpc("add_byte_comment", {
+    p_byte_id: args.byteId,
+    p_star_id: starId,
+    p_content: args.content,
+  });
+  if (error || !data) {
+    console.error("add_byte_comment error:", error);
+    return { success: false, error: "Error adding comment" } as const;
+  }
+  return data as {
+    success: boolean;
+    error?: string;
+    message?: string;
+    comment_id?: string;
+  };
 }
