@@ -1,7 +1,7 @@
 "use client";
 
 import "@/styles/input-styles.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   Search,
@@ -76,7 +76,7 @@ type Comment = {
   proof_day?: number;
 };
 
-export default function BytesPage() {
+function BytesContent() {
   const searchParams = useSearchParams();
   const { star, loading: starLoading } = useStar();
 
@@ -713,5 +713,13 @@ export default function BytesPage() {
         )}
       </div>
     </>
+  );
+}
+
+export default function BytesPage() {
+  return (
+    <Suspense fallback={<Loader />}>
+      <BytesContent />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import "@/styles/authentication-page-styles.css";
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { SiGmail } from "react-icons/si";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const sp = useSearchParams();
   const router = useRouter();
   const token = sp.get("token")?.trim() || "";
@@ -257,5 +257,19 @@ export default function ResetPasswordPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
