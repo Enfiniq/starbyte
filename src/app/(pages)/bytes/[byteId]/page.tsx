@@ -24,6 +24,8 @@ import {
   Target,
   ThumbsUp,
   ThumbsDown,
+  Repeat,
+  Activity,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -624,90 +626,96 @@ export default function ByteDetailPage() {
 
           <p className="text-lg leading-relaxed">{byte.description}</p>
 
-          <div className="mt-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center gap-3">
-                <Star className="h-4 w-4 text-[#4f7cff]" />
-                <span className="text-sm">
-                  {byte.stardust_reward || 0} Stardust
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Users className="h-4 w-4 text-[#4f7cff]" />
-                <span className="text-sm">
-                  {byte.current_participants || 0} /{" "}
-                  {byte.max_participants || "∞"} participants
-                </span>
-              </div>
-              {byte.estimated_duration_minutes && (
+          <div className="mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Star className="h-4 w-4 text-[#4f7cff]" />
+                  <span className="text-sm">
+                    {byte.stardust_reward || 0} Stardust
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Users className="h-4 w-4 text-[#4f7cff]" />
+                  <span className="text-sm">
+                    {byte.current_participants || 0} /{" "}
+                    {byte.max_participants || "∞"} participants
+                  </span>
+                </div>
                 <div className="flex items-center gap-3">
                   <Clock className="h-4 w-4 text-[#4f7cff]" />
                   <span className="text-sm">
-                    ~{byte.estimated_duration_minutes} min daily
+                    {byte.estimated_duration_minutes
+                      ? `~${byte.estimated_duration_minutes} min daily`
+                      : "No time limit"}
                   </span>
                 </div>
-              )}
-              {byte.duration_days && (
                 <div className="flex items-center gap-3">
                   <Calendar className="h-4 w-4 text-[#4f7cff]" />
                   <span className="text-sm">
-                    {byte.duration_days} days duration
+                    {byte.duration_days
+                      ? `${byte.duration_days} days duration`
+                      : "Open-ended"}
                   </span>
                 </div>
-              )}
-              {byte.difficulty && DIFFICULTY_CONFIG[byte.difficulty] && (
                 <div className="flex items-center gap-3">
-                  {(() => {
-                    const DifficultyIcon =
-                      DIFFICULTY_CONFIG[byte.difficulty].icon;
-                    return (
-                      <DifficultyIcon className="h-4 w-4 text-[#4f7cff]" />
-                    );
-                  })()}
+                  {byte.difficulty && DIFFICULTY_CONFIG[byte.difficulty] ? (
+                    (() => {
+                      const DifficultyIcon =
+                        DIFFICULTY_CONFIG[byte.difficulty].icon;
+                      return (
+                        <DifficultyIcon className="h-4 w-4 text-[#4f7cff]" />
+                      );
+                    })()
+                  ) : (
+                    <Gauge className="h-4 w-4 text-[#4f7cff]" />
+                  )}
                   <span className="text-sm">
-                    {DIFFICULTY_CONFIG[byte.difficulty].label}
+                    {byte.difficulty && DIFFICULTY_CONFIG[byte.difficulty]
+                      ? DIFFICULTY_CONFIG[byte.difficulty].label
+                      : "Medium"}
                   </span>
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {byte.expires_at && (
+              <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="h-4 w-4 text-[#4f7cff]" />
                   <span className="text-sm">
-                    Expires {dateFromNow(byte.expires_at)}
+                    {byte.expires_at
+                      ? `Expires ${dateFromNow(byte.expires_at)}`
+                      : "No expiration"}
                   </span>
                 </div>
-              )}
-              {byte.is_active != null && (
                 <div className="flex items-center gap-3">
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      byte.is_active ? "bg-[#4f7cff]" : "bg-gray-400"
+                  <Activity
+                    className={`h-4 w-4 ${
+                      byte.is_active
+                        ? " text-[#4f7cff]"
+                        : "text-black dark:text-white "
                     }`}
                   />
                   <span className="text-sm">
                     {byte.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
-              )}
-              {byte.recurrence && (
                 <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-[#4f7cff]" />
+                  <Repeat className="h-4 w-4 text-[#4f7cff]" />
                   <span className="text-sm">
-                    {byte.recurrence === "custom" && byte.custom_recurrence_days
-                      ? `Every ${byte.custom_recurrence_days} days`
-                      : `${capitalizeFirst(byte.recurrence)} recurrence`}
+                    {byte.recurrence
+                      ? byte.recurrence === "custom" &&
+                        byte.custom_recurrence_days
+                        ? `Every ${byte.custom_recurrence_days} days`
+                        : `${capitalizeFirst(byte.recurrence)} recurrence`
+                      : "One-time challenge"}
                   </span>
                 </div>
-              )}
-              {byte.challenge_type &&
-                CHALLENGE_TYPE_CONFIG[
-                  byte.challenge_type as keyof typeof CHALLENGE_TYPE_CONFIG
-                ] && (
-                  <div className="flex items-center gap-3">
-                    {(() => {
+                <div className="flex items-center gap-3">
+                  {byte.challenge_type &&
+                  CHALLENGE_TYPE_CONFIG[
+                    byte.challenge_type as keyof typeof CHALLENGE_TYPE_CONFIG
+                  ] ? (
+                    (() => {
                       const config =
                         CHALLENGE_TYPE_CONFIG[
                           byte.challenge_type as keyof typeof CHALLENGE_TYPE_CONFIG
@@ -716,24 +724,28 @@ export default function ByteDetailPage() {
                       return (
                         <ChallengeIcon className="h-4 w-4 text-[#4f7cff]" />
                       );
-                    })()}
-                    <span className="text-sm">
-                      {
-                        CHALLENGE_TYPE_CONFIG[
+                    })()
+                  ) : (
+                    <MonitorPlay className="h-4 w-4 text-[#4f7cff]" />
+                  )}
+                  <span className="text-sm">
+                    {byte.challenge_type &&
+                    CHALLENGE_TYPE_CONFIG[
+                      byte.challenge_type as keyof typeof CHALLENGE_TYPE_CONFIG
+                    ]
+                      ? CHALLENGE_TYPE_CONFIG[
                           byte.challenge_type as keyof typeof CHALLENGE_TYPE_CONFIG
                         ].label
-                      }
-                    </span>
-                  </div>
-                )}
-              {byte.completions_count != null && (
+                      : "Digital challenge"}
+                  </span>
+                </div>
                 <div className="flex items-center gap-3">
                   <Target className="h-4 w-4 text-[#4f7cff]" />
                   <span className="text-sm">
                     {byte.completions_count || 0} stars completed
                   </span>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 

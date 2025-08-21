@@ -595,7 +595,7 @@ function BytesContent() {
           className="hidden"
         />
       </div>
-      -
+
       <div className="space-y-4">
         {loadingList ? (
           <div className="space-y-4">
@@ -627,7 +627,7 @@ function BytesContent() {
           filteredAcceptedBytes.map((byte) => (
             <div key={byte.id} className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
-                <div className="w-32 h-32 overflow-hidden bg-gray-100 flex-shrink-0 rounded-lg">
+                <div className="w-32 h-32 overflow-hidden flex-shrink-0 rounded-lg">
                   {byte.preview_image_url &&
                   byte.preview_image_url.length > 0 ? (
                     <ImageSlider

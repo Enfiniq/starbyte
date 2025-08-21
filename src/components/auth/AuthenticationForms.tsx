@@ -276,6 +276,19 @@ export default function AuthenticationForms() {
           )}
         </FormItem>
 
+        <div className="text-right mb-4">
+          <p className="text-sm text-muted-foreground">
+            Forgot password?{" "}
+            <a
+              href="/authentication/reset-password"
+              className="text-primary cursor-pointer"
+            >
+              Reset it
+            </a>
+            .
+          </p>
+        </div>
+
         <SimpleSubmitButton>
           {isSignInLoading ? "Signing In..." : "Sign In"}
         </SimpleSubmitButton>
