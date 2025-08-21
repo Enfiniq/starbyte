@@ -10,7 +10,7 @@ import { Check, Shield } from "lucide-react";
 import ImageSlider from "@/components/ImageSlider";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import ProfileButton from "@/components/profile/ProfileButton";
 import useStar from "@/hooks/useStar";
 import Loader from "@/components/loader";
@@ -37,7 +37,7 @@ export default function RewardPage() {
   const [result, setResult] = useState<PurchaseRewardResult | null>(null);
   const [resolved, setResolved] = useState<ResolveResponse | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!rewardId) return;
     setLoading(true);
     const res = await getRewardById(rewardId);
@@ -48,14 +48,12 @@ export default function RewardPage() {
       setReward(res.reward);
       setError(null);
     }
-    console.log("response", res);
     setLoading(false);
-  };
+  }, [rewardId]);
 
   useEffect(() => {
     refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rewardId]);
+  }, [refresh]);
 
   const outOfStock = useMemo(() => {
     if (!reward) return false;

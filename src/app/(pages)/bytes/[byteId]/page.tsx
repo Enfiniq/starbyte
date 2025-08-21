@@ -22,6 +22,8 @@ import {
   MonitorPlay,
   Dumbbell,
   Target,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -47,6 +49,7 @@ import {
   submitByteProof,
   createProgressNote,
   createRegret,
+  manageProofApproval,
   type ByteDetails,
   type ByteComment as RpcByteComment,
   type ByteProof as RpcByteProof,
@@ -58,6 +61,21 @@ const BREADCRUMBS = [
   { id: 1, name: "Home", href: "/" },
   { id: 2, name: "Bytes", href: "/bytes" },
 ];
+
+const DIFFICULTY_CONFIG = {
+  easy: { icon: Sprout, label: "Easy" },
+  medium: { icon: Gauge, label: "Medium" },
+  hard: { icon: Flame, label: "Hard" },
+  extreme: { icon: Zap, label: "Extreme" },
+} as const;
+
+const CHALLENGE_TYPE_CONFIG = {
+  digital: { icon: MonitorPlay, label: "Digital challenge" },
+  physical: { icon: Dumbbell, label: "Physical challenge" },
+} as const;
+
+const capitalizeFirst = (str: string) =>
+  str.charAt(0).toUpperCase() + str.slice(1);
 
 type ByteDetail = {
   id: string;
@@ -107,6 +125,8 @@ type Comment = {
     display_name?: string;
     avatar?: string;
     is_verified: boolean;
+    level?: number;
+    is_premium?: boolean;
   };
   content: string;
   type: "comment" | "proof" | "progress_note" | "regret";
@@ -129,6 +149,9 @@ export default function ByteDetailPage() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [approvingProofs, setApprovingProofs] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     const fetchByteDetail = async () => {
@@ -214,6 +237,8 @@ export default function ByteDetailPage() {
                 display_name: c.author.display_name || undefined,
                 avatar: c.author.avatar || undefined,
                 is_verified: !!c.author.is_verified,
+                level: c.author.level || 0,
+                is_premium: !!c.author.is_premium,
               },
               content: c.content,
               type: "comment",
@@ -228,6 +253,8 @@ export default function ByteDetailPage() {
                 display_name: p.participant.display_name || undefined,
                 avatar: p.participant.avatar || undefined,
                 is_verified: !!p.participant.is_verified,
+                level: p.participant.level || 0,
+                is_premium: !!p.participant.is_premium,
               },
               content: p.proof_text || "",
               type: "proof",
@@ -245,6 +272,8 @@ export default function ByteDetailPage() {
                 display_name: n.author.display_name || undefined,
                 avatar: n.author.avatar || undefined,
                 is_verified: !!n.author.is_verified,
+                level: n.author.level || 0,
+                is_premium: !!n.author.is_premium,
               },
               content: n.content,
               type: "progress_note",
@@ -260,6 +289,8 @@ export default function ByteDetailPage() {
                 display_name: r.author.display_name || undefined,
                 avatar: r.author.avatar || undefined,
                 is_verified: !!r.author.is_verified,
+                level: r.author.level || 0,
+                is_premium: !!r.author.is_premium,
               },
               content: r.content,
               type: "regret",
@@ -427,6 +458,60 @@ export default function ByteDetailPage() {
     setUploadedFiles((prev) => [...prev, ...files].slice(0, 5));
   };
 
+  const handleProofApproval = async (
+    proofId: string,
+    action: "approve" | "reject"
+  ) => {
+    if (!star || !byte) return;
+
+    try {
+      setApprovingProofs((prev) => ({ ...prev, [proofId]: true }));
+
+      const res = await manageProofApproval({
+        proofId,
+        byteId: byte.id,
+        action,
+        starId: star.id,
+      });
+
+      if (!res.success) {
+        throw new Error(res.error || `Failed to ${action} proof`);
+      }
+
+      setComments((prev) =>
+        prev.map((comment) =>
+          comment.id === proofId && comment.type === "proof"
+            ? { ...comment, is_approved: action === "approve" }
+            : comment
+        )
+      );
+
+      toast.success(res.message || `Proof ${action}d successfully!`);
+    } catch (error) {
+      console.error(`Failed to ${action} proof:`, error);
+      toast.error(`Failed to ${action} proof. Please try again.`);
+    } finally {
+      setApprovingProofs((prev) => ({ ...prev, [proofId]: false }));
+    }
+  };
+
+  const canApproveProof = (comment: Comment): boolean => {
+    if (!star || !byte || comment.type !== "proof") return false;
+
+    if (byte.creator.star_name === star.starName) {
+      return comment.author.star_name !== star.starName;
+    }
+
+    if (
+      byte.is_accepted &&
+      comment.author.star_name === byte.creator.star_name
+    ) {
+      return true;
+    }
+
+    return false;
+  };
+
   const getCommentTypeBadge = (type: Comment["type"]) => {
     switch (type) {
       case "proof":
@@ -506,7 +591,7 @@ export default function ByteDetailPage() {
               >
                 <Avatar className="h-8 w-8">
                   <Image
-                    src={byte.creator.avatar || "/api/placeholder/32/32"}
+                    src={byte.creator.avatar || "/placeholder-star.jpg"}
                     alt={byte.creator.display_name || byte.creator.star_name}
                     width={32}
                     height={32}
@@ -531,109 +616,125 @@ export default function ByteDetailPage() {
                 />
               </div>
             </div>
-            <span>•</span>
+            <span>·</span>
             <span>{dateFromNow(byte.created_at)}</span>
-            <span>•</span>
+            <span>·</span>
             <span>{byte.category}</span>
           </div>
 
           <p className="text-lg leading-relaxed">{byte.description}</p>
 
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex items-center gap-3">
-              <Star className="h-4 w-4 text-[#4f7cff]" />
-              <span className="text-sm">{byte.stardust_reward} Stardust</span>
+          <div className="mt-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center gap-3">
+                <Star className="h-4 w-4 text-[#4f7cff]" />
+                <span className="text-sm">
+                  {byte.stardust_reward || 0} Stardust
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Users className="h-4 w-4 text-[#4f7cff]" />
+                <span className="text-sm">
+                  {byte.current_participants || 0} /{" "}
+                  {byte.max_participants || "∞"} participants
+                </span>
+              </div>
+              {byte.estimated_duration_minutes && (
+                <div className="flex items-center gap-3">
+                  <Clock className="h-4 w-4 text-[#4f7cff]" />
+                  <span className="text-sm">
+                    ~{byte.estimated_duration_minutes} min daily
+                  </span>
+                </div>
+              )}
+              {byte.duration_days && (
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-[#4f7cff]" />
+                  <span className="text-sm">
+                    {byte.duration_days} days duration
+                  </span>
+                </div>
+              )}
+              {byte.difficulty && DIFFICULTY_CONFIG[byte.difficulty] && (
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const DifficultyIcon =
+                      DIFFICULTY_CONFIG[byte.difficulty].icon;
+                    return (
+                      <DifficultyIcon className="h-4 w-4 text-[#4f7cff]" />
+                    );
+                  })()}
+                  <span className="text-sm">
+                    {DIFFICULTY_CONFIG[byte.difficulty].label}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              <Users className="h-4 w-4 text-[#4f7cff]" />
-              <span className="text-sm">
-                {byte.current_participants} / {byte.max_participants || "∞"}{" "}
-                participants
-              </span>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {byte.expires_at && (
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="h-4 w-4 text-[#4f7cff]" />
+                  <span className="text-sm">
+                    Expires {dateFromNow(byte.expires_at)}
+                  </span>
+                </div>
+              )}
+              {byte.is_active != null && (
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      byte.is_active ? "bg-[#4f7cff]" : "bg-gray-400"
+                    }`}
+                  />
+                  <span className="text-sm">
+                    {byte.is_active ? "Active" : "Inactive"}
+                  </span>
+                </div>
+              )}
+              {byte.recurrence && (
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-4 w-4 text-[#4f7cff]" />
+                  <span className="text-sm">
+                    {byte.recurrence === "custom" && byte.custom_recurrence_days
+                      ? `Every ${byte.custom_recurrence_days} days`
+                      : `${capitalizeFirst(byte.recurrence)} recurrence`}
+                  </span>
+                </div>
+              )}
+              {byte.challenge_type &&
+                CHALLENGE_TYPE_CONFIG[
+                  byte.challenge_type as keyof typeof CHALLENGE_TYPE_CONFIG
+                ] && (
+                  <div className="flex items-center gap-3">
+                    {(() => {
+                      const config =
+                        CHALLENGE_TYPE_CONFIG[
+                          byte.challenge_type as keyof typeof CHALLENGE_TYPE_CONFIG
+                        ];
+                      const ChallengeIcon = config.icon;
+                      return (
+                        <ChallengeIcon className="h-4 w-4 text-[#4f7cff]" />
+                      );
+                    })()}
+                    <span className="text-sm">
+                      {
+                        CHALLENGE_TYPE_CONFIG[
+                          byte.challenge_type as keyof typeof CHALLENGE_TYPE_CONFIG
+                        ].label
+                      }
+                    </span>
+                  </div>
+                )}
+              {byte.completions_count != null && (
+                <div className="flex items-center gap-3">
+                  <Target className="h-4 w-4 text-[#4f7cff]" />
+                  <span className="text-sm">
+                    {byte.completions_count || 0} stars completed
+                  </span>
+                </div>
+              )}
             </div>
-            {byte.estimated_duration_minutes && (
-              <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4 text-[#4f7cff]" />
-                <span className="text-sm">
-                  ~{byte.estimated_duration_minutes} min daily
-                </span>
-              </div>
-            )}
-            {byte.duration_days && (
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-[#4f7cff]" />
-                <span className="text-sm">
-                  {byte.duration_days} days duration
-                </span>
-              </div>
-            )}
-            {byte.expires_at && (
-              <div className="flex items-center gap-3 sm:col-span-2">
-                <AlertTriangle className="h-4 w-4 text-[#4f7cff]" />
-                <span className="text-sm">
-                  Expires {dateFromNow(byte.expires_at)}
-                </span>
-              </div>
-            )}
-            {byte.difficulty && (
-              <div className="flex items-center gap-3">
-                {byte.difficulty === "easy" && (
-                  <Sprout className="h-4 w-4 text-[#4f7cff]" />
-                )}
-                {byte.difficulty === "medium" && (
-                  <Gauge className="h-4 w-4 text-[#4f7cff]" />
-                )}
-                {byte.difficulty === "hard" && (
-                  <Flame className="h-4 w-4 text-[#4f7cff]" />
-                )}
-                {byte.difficulty === "extreme" && (
-                  <Zap className="h-4 w-4 text-[#4f7cff]" />
-                )}
-                <span className="text-sm">Difficulty: {byte.difficulty}</span>
-              </div>
-            )}
-            {byte.is_active != null && (
-              <div className="flex items-center gap-3">
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    byte.is_active ? "bg-[#4f7cff]" : "bg-gray-400"
-                  }`}
-                />
-                <span className="text-sm">
-                  Status: {byte.is_active ? "Active" : "Inactive"}
-                </span>
-              </div>
-            )}
-            {byte.recurrence && (
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-[#4f7cff]" />
-                <span className="text-sm">
-                  Recurrence:{" "}
-                  {byte.recurrence === "custom" && byte.custom_recurrence_days
-                    ? `Every ${byte.custom_recurrence_days} days`
-                    : byte.recurrence}
-                </span>
-              </div>
-            )}
-            {byte.challenge_type && (
-              <div className="flex items-center gap-3">
-                {byte.challenge_type === "digital" && (
-                  <MonitorPlay className="h-4 w-4 text-[#4f7cff]" />
-                )}
-                {byte.challenge_type === "physical" && (
-                  <Dumbbell className="h-4 w-4 text-[#4f7cff]" />
-                )}
-                <span className="text-sm">Type: {byte.challenge_type}</span>
-              </div>
-            )}
-            {byte.completions_count != null && (
-              <div className="flex items-center gap-3">
-                <Target className="h-4 w-4 text-[#4f7cff]" />
-                <span className="text-sm">
-                  Completions: {byte.completions_count}
-                </span>
-              </div>
-            )}
           </div>
 
           {byte.requires_proof && (
@@ -646,7 +747,7 @@ export default function ByteDetailPage() {
               <div className="flex items-center gap-3">
                 <Upload className="h-4 w-4 text-[#4f7cff]" />
                 <span className="text-sm">
-                  {byte.required_proofs_count} proofs required
+                  {byte.required_proofs_count || 1} proofs required
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -707,7 +808,7 @@ export default function ByteDetailPage() {
           <div className="flex gap-3 items-center">
             <Avatar className="h-8 w-8">
               <Image
-                src={star?.avatar || "/api/placeholder/32/32"}
+                src={star?.avatar || "/placeholder-star.jpg"}
                 alt={star?.displayName || star?.starName || "User"}
                 width={32}
                 height={32}
@@ -764,7 +865,7 @@ export default function ByteDetailPage() {
                   variant="secondary"
                   size="sm"
                   onClick={() => setUploadedFiles([])}
-                  containerClass="h-6 px-2"
+                  containerClass="flex flex-row justify-center items-center h-6 px-2"
                 />
               </div>
             )}
@@ -881,7 +982,7 @@ export default function ByteDetailPage() {
                   >
                     <Avatar className="h-8 w-8">
                       <Image
-                        src={comment.author.avatar || "/api/placeholder/32/32"}
+                        src={comment.author.avatar || "/placeholder-star.jpg"}
                         alt={
                           comment.author.display_name ||
                           comment.author.star_name
@@ -902,16 +1003,12 @@ export default function ByteDetailPage() {
 
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {comment.author.display_name ||
-                          comment.author.star_name}
-                      </span>
                       <VerificationBadge
                         star={{
                           starName: comment.author.star_name,
                           displayName: comment.author.display_name,
-                          level: 0,
-                          isPremium: false,
+                          level: comment.author.level || 0,
+                          isPremium: !!comment.author.is_premium,
                         }}
                         size={14}
                         tooltip={true}
@@ -943,16 +1040,45 @@ export default function ByteDetailPage() {
                     )}
 
                     {comment.type === "proof" && (
-                      <div className="flex items-center gap-2 text-xs">
-                        {comment.is_approved ? (
-                          <div className="flex items-center gap-1 text-green-600">
-                            <CheckCircle className="h-3 w-3" />
-                            <span>Proof Approved</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-orange-600">
-                            <Clock className="h-3 w-3" />
-                            <span>Pending Review</span>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 text-xs">
+                          {comment.is_approved ? (
+                            <div className="flex items-center gap-1 text-green-600">
+                              <CheckCircle className="h-3 w-3" />
+                              <span>Proof Approved</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-orange-600">
+                              <Clock className="h-3 w-3" />
+                              <span>Pending Review</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {canApproveProof(comment) && !comment.is_approved && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() =>
+                                handleProofApproval(comment.id, "approve")
+                              }
+                              disabled={approvingProofs[comment.id]}
+                              className="flex items-center gap-1 px-2 py-1 text-xs text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
+                              title="Approve proof"
+                            >
+                              <ThumbsUp className="h-3 w-3" />
+                              {approvingProofs[comment.id] ? "..." : "Approve"}
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleProofApproval(comment.id, "reject")
+                              }
+                              disabled={approvingProofs[comment.id]}
+                              className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                              title="Reject proof"
+                            >
+                              <ThumbsDown className="h-3 w-3" />
+                              {approvingProofs[comment.id] ? "..." : "Reject"}
+                            </button>
                           </div>
                         )}
                       </div>

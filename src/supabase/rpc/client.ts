@@ -415,18 +415,6 @@ export async function getHomepageBytes(params?: {
     return { success: false, error: "Error fetching homepage bytes" } as const;
   }
 
-  if (data?.success && data?.bytes) {
-    console.log(`Homepage bytes loaded: ${data.bytes.length} items`);
-    console.log(
-      "Source distribution:",
-      data.bytes.reduce((acc: Record<string, number>, byte: ByteCard) => {
-        const source = byte.source_type || "unknown";
-        acc[source] = (acc[source] || 0) + 1;
-        return acc;
-      }, {})
-    );
-  }
-
   return data as HomepageBytesData;
 }
 
@@ -723,6 +711,8 @@ export type ByteProof = {
     display_name?: string | null;
     avatar?: string | null;
     is_verified?: boolean | null;
+    level?: number | null;
+    is_premium?: boolean | null;
   };
 };
 
@@ -772,5 +762,44 @@ export async function addByteComment(args: {
     error?: string;
     message?: string;
     comment_id?: string;
+  };
+}
+
+export async function manageProofApproval(args: {
+  proofId: string;
+  byteId: string;
+  action: "approve" | "reject";
+  starId?: string;
+}) {
+  const supabase = createBrowserClient();
+  let starId = args.starId;
+  if (!starId) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    starId = user?.id || undefined;
+  }
+  if (!starId) return { success: false, error: "Not authenticated" } as const;
+
+  const { data, error } = await supabase.rpc("manage_proof_approval", {
+    p_proof_id: args.proofId,
+    p_approver_star_id: starId,
+    p_action: args.action,
+    p_byte_id: args.byteId,
+  });
+
+  if (error || !data) {
+    console.error("manage_proof_approval error:", error);
+    return {
+      success: false,
+      error: error?.message || "Failed to manage proof approval",
+    } as const;
+  }
+
+  return data as {
+    success: boolean;
+    error?: string;
+    message?: string;
+    action?: string;
   };
 }

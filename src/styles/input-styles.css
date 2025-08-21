@@ -4,7 +4,7 @@
   height: 55px;
   border-radius: 55px;
   display: grid;
-  grid-template-columns: 15% 85%;
+  grid-template-columns: auto 1fr;
   padding: 0 0.4rem;
   position: relative;
   border: 1px solid var(--border);
@@ -20,6 +20,8 @@
   margin: auto;
   height: 16px;
   width: 16px;
+  margin-right: 16px;
+  margin-left: 16px;
 }
 
 .input-field input {

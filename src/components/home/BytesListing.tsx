@@ -215,7 +215,7 @@ const BytesListing = ({ url, bytes, index }: BytesListingProps) => {
                     isActive === false
                       ? "Inactive"
                       : byteDifficulty
-                      ? `Active • ${byteDifficulty}`
+                      ? `Active · ${byteDifficulty}`
                       : "Active"
                   }
                 />
