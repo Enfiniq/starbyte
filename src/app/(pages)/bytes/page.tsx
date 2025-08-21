@@ -2,15 +2,15 @@
 
 import "@/styles/input-styles.css";
 import { useEffect, useMemo, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import {
-  Search,
   Star,
   Upload,
   MessageCircle,
   Target,
   ImagePlus,
   X,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,11 +21,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
+import Link from "next/link";
 import ImageSlider from "@/components/ImageSlider";
-import ProfileButton from "@/components/profile/ProfileButton";
 import { dateFromNow } from "@/lib/formattedDate";
+import ProfileButton from "@/components/profile/ProfileButton";
 import useStar from "@/hooks/useStar";
 import Loader from "@/components/loader";
 import { toast } from "sonner";
@@ -77,17 +92,12 @@ type Comment = {
 };
 
 function BytesContent() {
-  const searchParams = useSearchParams();
   const { star, loading: starLoading } = useStar();
 
-  const [searchQuery, setSearchQuery] = useState(
-    searchParams?.get("search") || ""
-  );
-  const [statusFilter, setStatusFilter] = useState(
-    searchParams?.get("status") || "all"
-  );
-
   const [selectedByteId, setSelectedByteId] = useState<string | null>(null);
+  const [selectedByteFromCombo, setSelectedByteFromCombo] =
+    useState<string>("");
+  const [comboOpen, setComboOpen] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [commentType, setCommentType] = useState<Comment["type"]>("comment");
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -160,19 +170,8 @@ function BytesContent() {
       challenge_type: undefined,
     }));
 
-    const filtered = items.filter((byte) => {
-      const matchesSearch =
-        byte.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        byte.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesStatus =
-        statusFilter === "all" || byte.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-
-    return filtered;
-  }, [acceptedList, searchQuery, statusFilter]);
+    return items;
+  }, [acceptedList]);
 
   const handleSubmitComment = async () => {
     if (!star || !selectedByteId) return;
@@ -260,6 +259,8 @@ function BytesContent() {
       setNewComment("");
       setUploadedFiles([]);
       setSelectedByteId(null);
+      setSelectedByteFromCombo("");
+      setComboOpen(false);
       setCommentType("comment");
       toast.success("Submitted successfully!");
     } catch (error) {
@@ -317,24 +318,93 @@ function BytesContent() {
 
   return (
     <>
-      <div className="mb-8 bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+      <div className="mb-8 p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <MessageCircle className="h-5 w-5 text-[#4f7cff]" />
           Add Content
         </h3>
 
-        {!selectedByteId ? (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-              <MessageCircle className="h-8 w-8 text-gray-400" />
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
+              Select Challenge:
+            </span>
+            <div className="flex-1">
+              <Popover open={comboOpen} onOpenChange={setComboOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={comboOpen}
+                    className="w-full justify-between"
+                  >
+                    {selectedByteFromCombo
+                      ? filteredAcceptedBytes.find(
+                          (byte) => byte.id === selectedByteFromCombo
+                        )?.title
+                      : "Select a challenge..."}
+                    <ChevronsUpDown className="opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                  <Command>
+                    <CommandInput
+                      placeholder="Search challenges..."
+                      className="h-9"
+                    />
+                    <CommandList>
+                      <CommandEmpty>No challenge found.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredAcceptedBytes.map((byte) => (
+                          <CommandItem
+                            key={byte.id}
+                            value={`${byte.title} ${byte.description} ${
+                              byte.creator.display_name ||
+                              byte.creator.star_name
+                            } ${byte.status}`}
+                            onSelect={() => {
+                              const currentValue = byte.id;
+                              setSelectedByteFromCombo(
+                                currentValue === selectedByteFromCombo
+                                  ? ""
+                                  : currentValue
+                              );
+                              setSelectedByteId(
+                                currentValue === selectedByteFromCombo
+                                  ? null
+                                  : currentValue
+                              );
+                              setComboOpen(false);
+                            }}
+                          >
+                            <div className="flex flex-col w-full">
+                              <span className="font-medium">{byte.title}</span>
+                              <span className="text-xs text-muted-foreground">
+                                by{" "}
+                                {byte.creator.display_name ||
+                                  byte.creator.star_name}{" "}
+                                • {byte.status}
+                              </span>
+                            </div>
+                            <Check
+                              className={cn(
+                                "ml-auto",
+                                selectedByteFromCombo === byte.id
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
-            <p className="text-muted-foreground">
-              Select &quot;Add Content&quot; on a challenge to share comments,
-              proofs, or progress notes.
-            </p>
           </div>
-        ) : (
-          <div className="space-y-4">
+
+          {selectedByteId && (
             <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
               <div className="flex items-center justify-between">
                 <div>
@@ -349,7 +419,11 @@ function BytesContent() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setSelectedByteId(null)}
+                  onClick={() => {
+                    setSelectedByteId(null);
+                    setSelectedByteFromCombo("");
+                    setComboOpen(false);
+                  }}
                   className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
                   title="Remove selection"
                 >
@@ -357,219 +431,171 @@ function BytesContent() {
                 </button>
               </div>
             </div>
+          )}
 
-            <div className="space-y-4">
-              <div className="flex gap-3 items-center flex-wrap">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage
-                    src={star?.avatar || "/placeholder-star.jpg"}
-                    alt={star?.displayName || star?.starName || "User"}
-                  />
-                  <AvatarFallback>
-                    {(star?.displayName || star?.starName || "U")
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <Select
-                  value={commentType}
-                  onValueChange={(v: Comment["type"]) => {
-                    setCommentType(v);
-                    if (v === "comment" || v === "regret") {
-                      setUploadedFiles([]);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="comment">Comment</SelectItem>
-                    <SelectItem value="proof">Proof</SelectItem>
-                    <SelectItem value="progress_note">Progress Note</SelectItem>
-                    <SelectItem value="regret">Regret</SelectItem>
-                  </SelectContent>
-                </Select>
-                <button
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                    commentType === "comment" || commentType === "regret"
-                      ? "text-gray-400 bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
-                      : "text-[#4f7cff] bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/40"
-                  }`}
-                  onClick={() => {
-                    if (commentType !== "comment" && commentType !== "regret") {
-                      document.getElementById("comment-file")?.click();
-                    }
-                  }}
-                  type="button"
-                  disabled={
-                    commentType === "comment" || commentType === "regret"
-                  }
-                >
-                  <ImagePlus className="h-4 w-4" />
-                  Add image
-                </button>
-                {uploadedFiles.length > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                    <span className="text-sm text-green-700 dark:text-green-300">
-                      {uploadedFiles.length} file(s)
-                    </span>
-                    <button
-                      onClick={() => setUploadedFiles([])}
-                      className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="relative">
-                <div
-                  className={`input-field ${
-                    commentError ? "border-red-500" : ""
-                  }`}
-                >
-                  <MessageCircle
-                    className="icon text-[#4f7cff]"
-                    aria-hidden="true"
-                  />
-                  <input
-                    name="comment"
-                    type="text"
-                    placeholder={`Share your ${
-                      commentType === "comment"
-                        ? "thoughts"
-                        : commentType.replace("_", " ")
-                    }...`}
-                    required={
-                      commentType === "comment" || commentType === "regret"
-                    }
-                    autoComplete="off"
-                    disabled={submitting || !star}
-                    aria-invalid={Boolean(commentError)}
-                    aria-describedby={
-                      commentError ? "comment-error" : undefined
-                    }
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                  />
-                </div>
-                {commentError && (
-                  <div className="text-sm text-red-500 mt-1" id="comment-error">
-                    {commentError}
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <ProfileButton
-                  title="Cancel"
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setNewComment("");
-                    setUploadedFiles([]);
-                    setCommentType("comment");
-                    setCommentError(null);
-                    setSelectedByteId(null);
-                  }}
-                  disabled={submitting}
-                />
-                <ProfileButton
-                  title={submitting ? "Submitting..." : "Send"}
-                  onClick={handleSubmitComment}
-                  disabled={
-                    submitting ||
-                    !star ||
-                    (!newComment.trim() && uploadedFiles.length === 0)
-                  }
-                  size="sm"
-                />
-              </div>
-            </div>
-
+          <div className="flex gap-3 items-center flex-wrap">
+            <Avatar className="h-10 w-10">
+              <AvatarImage
+                src={star?.avatar || "/placeholder-star.jpg"}
+                alt={star?.displayName || star?.starName || "User"}
+              />
+              <AvatarFallback>
+                {(star?.displayName || star?.starName || "U")
+                  .slice(0, 2)
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <Select
+              value={commentType}
+              onValueChange={(v: Comment["type"]) => {
+                setCommentType(v);
+                if (v === "comment" || v === "regret") {
+                  setUploadedFiles([]);
+                }
+              }}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="comment">Comment</SelectItem>
+                <SelectItem value="proof">Proof</SelectItem>
+                <SelectItem value="progress_note">Progress Note</SelectItem>
+                <SelectItem value="regret">Regret</SelectItem>
+              </SelectContent>
+            </Select>
+            <button
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                commentType === "comment" || commentType === "regret"
+                  ? "text-gray-400 bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
+                  : "text-[#4f7cff] bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/40"
+              }`}
+              onClick={() => {
+                if (commentType !== "comment" && commentType !== "regret") {
+                  document.getElementById("comment-file")?.click();
+                }
+              }}
+              type="button"
+              disabled={commentType === "comment" || commentType === "regret"}
+            >
+              <ImagePlus className="h-4 w-4" />
+              Add image
+            </button>
             {uploadedFiles.length > 0 && (
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <p className="text-sm font-medium mb-3 text-gray-700 dark:text-gray-300">
-                  Image Preview
-                </p>
-                <div className="flex gap-3 items-center flex-wrap">
-                  {uploadedFiles.map((file, index) => (
-                    <div key={index} className="relative group">
-                      <Image
-                        src={URL.createObjectURL(file)}
-                        alt={`Preview ${index + 1}`}
-                        width={80}
-                        height={80}
-                        className="rounded-lg object-cover border-2 border-gray-200 dark:border-gray-600"
-                      />
-                      <button
-                        onClick={() =>
-                          setUploadedFiles((prev) =>
-                            prev.filter((_, i) => i !== index)
-                          )
-                        }
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                <span className="text-sm text-green-700 dark:text-green-300">
+                  {uploadedFiles.length} file(s)
+                </span>
+                <button
+                  onClick={() => setUploadedFiles([])}
+                  className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
             )}
+          </div>
 
-            <input
-              id="comment-file"
-              type="file"
-              accept="image/*"
-              onChange={handleFileUpload}
-              className="hidden"
+          <div className="relative">
+            <div
+              className={`input-field ${commentError ? "border-red-500" : ""}`}
+            >
+              <MessageCircle
+                className="icon text-[#4f7cff]"
+                aria-hidden="true"
+              />
+              <input
+                name="comment"
+                type="text"
+                placeholder={`Share your ${
+                  commentType === "comment"
+                    ? "thoughts"
+                    : commentType.replace("_", " ")
+                }...`}
+                required={commentType === "comment" || commentType === "regret"}
+                autoComplete="off"
+                disabled={submitting || !star}
+                aria-invalid={Boolean(commentError)}
+                aria-describedby={commentError ? "comment-error" : undefined}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+              />
+            </div>
+            {commentError && (
+              <div className="text-sm text-red-500 mt-1" id="comment-error">
+                {commentError}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <ProfileButton
+              title="Cancel"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setNewComment("");
+                setUploadedFiles([]);
+                setCommentType("comment");
+                setCommentError(null);
+                setSelectedByteId(null);
+                setSelectedByteFromCombo("");
+                setComboOpen(false);
+              }}
+              disabled={submitting}
             />
+            <ProfileButton
+              title={submitting ? "Submitting..." : "Send"}
+              onClick={handleSubmitComment}
+              disabled={
+                submitting ||
+                !star ||
+                !selectedByteId ||
+                (!newComment.trim() && uploadedFiles.length === 0)
+              }
+              size="sm"
+            />
+          </div>
+        </div>
+
+        {uploadedFiles.length > 0 && (
+          <div className="p-4">
+            <p className="text-sm font-medium mb-3">Image Preview</p>
+            <div className="flex gap-3 items-center flex-wrap">
+              {uploadedFiles.map((file, index) => (
+                <div key={index} className="relative group">
+                  <Image
+                    src={URL.createObjectURL(file)}
+                    alt={`Preview ${index + 1}`}
+                    width={80}
+                    height={80}
+                    className="rounded-lg object-cover border-2 border-gray-200 dark:border-gray-600"
+                  />
+                  <button
+                    onClick={() =>
+                      setUploadedFiles((prev) =>
+                        prev.filter((_, i) => i !== index)
+                      )
+                    }
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+        <input
+          id="comment-file"
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
       </div>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold">Accepted Bytes</h1>
-          <p className="text-muted-foreground mt-1">
-            Track your accepted challenges and progress
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Target className="h-4 w-4" />
-          <span>{filteredAcceptedBytes.length} challenges</span>
-        </div>
-      </div>
-      <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
-        <div className="relative flex-1">
-          <div className="input-field">
-            <Search className="icon text-[#4f7cff]" aria-hidden="true" />
-            <input
-              name="search"
-              type="text"
-              placeholder="Search your challenges..."
-              autoComplete="off"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      -
       <div className="space-y-4">
         {loadingList ? (
           <div className="space-y-4">
@@ -591,22 +617,17 @@ function BytesContent() {
             <Target className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No challenges found</h3>
             <p className="text-muted-foreground mb-4">
-              {searchQuery
-                ? "Try adjusting your search or filters."
-                : "You haven't accepted any challenges yet."}
+              You haven&apos;t accepted any challenges yet.
             </p>
-            {!searchQuery && (
-              <Link href="/">
-                <ProfileButton title="Explore Challenges" size="sm" />
-              </Link>
-            )}
+            <Link href="/">
+              <ProfileButton title="Explore Challenges" size="sm" />
+            </Link>
           </div>
         ) : (
           filteredAcceptedBytes.map((byte) => (
             <div key={byte.id} className="p-6">
               <div className="flex flex-col md:flex-row gap-4">
-                {/* Image */}
-                <div className="w-32 h-32 overflow-hidden bg-gray-100 flex-shrink-0">
+                <div className="w-32 h-32 overflow-hidden bg-gray-100 flex-shrink-0 rounded-lg">
                   {byte.preview_image_url &&
                   byte.preview_image_url.length > 0 ? (
                     <ImageSlider
@@ -620,7 +641,6 @@ function BytesContent() {
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-2">
                     <Link
@@ -638,7 +658,6 @@ function BytesContent() {
                     {byte.description}
                   </p>
 
-                  {/* Creator */}
                   <div className="flex items-center gap-2 mb-3">
                     <Avatar className="h-5 w-5">
                       <AvatarImage
@@ -658,7 +677,6 @@ function BytesContent() {
                     </span>
                   </div>
 
-                  {/* Metadata row */}
                   <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
                     <div className="flex items-center gap-1">
                       <Star className="h-4 w-4 text-[#4f7cff]" />
@@ -675,7 +693,6 @@ function BytesContent() {
                     </div>
                   </div>
 
-                  {/* Progress bar */}
                   <div className="mb-4">
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Progress</span>
@@ -691,12 +708,14 @@ function BytesContent() {
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="flex flex-wrap gap-2">
                     <ProfileButton
                       title="Add Content"
                       size="sm"
-                      onClick={() => setSelectedByteId(byte.id)}
+                      onClick={() => {
+                        setSelectedByteId(byte.id);
+                        setSelectedByteFromCombo(byte.id);
+                      }}
                     />
                     <Link href={`/bytes/${byte.id}`}>
                       <ProfileButton

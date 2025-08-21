@@ -18,7 +18,7 @@ const Button = ({
   containerClass,
 }: ButtonProps) => {
   return (
-    <Link href={leftIcon ? "#features" : "/authentication"}>
+    <Link href={"/authentication"}>
       <button
         id={id}
         className={clsx(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { rootDomain } from "@/lib/utils";
 
 function extractSubdomain(request: NextRequest): string | null {
   const url = request.url;
@@ -20,8 +21,7 @@ function extractSubdomain(request: NextRequest): string | null {
     return null;
   }
 
-  const rootDomainFormatted =
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN?.split(":")[0] || "localhost";
+  const rootDomainFormatted = rootDomain.split(":")[0];
 
   if (hostname.includes("---") && hostname.endsWith(".vercel.app")) {
     const parts = hostname.split("---");
@@ -36,21 +36,6 @@ function extractSubdomain(request: NextRequest): string | null {
   return isSubdomain ? hostname.replace(`.${rootDomainFormatted}`, "") : null;
 }
 
-export const config = {
-  matcher: [
-    "/",
-    "/authentication/:path*",
-    "/verify-email/:path*",
-    "/reset-password/:path*",
-    "/home/:path*",
-    "/bytes/:path*",
-    "/marketplace/:path*",
-    "/leaderboard/:path*",
-    "/profile/:path*",
-    "/star/:path*",
-  ],
-};
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const subdomain = extractSubdomain(request);
@@ -59,6 +44,10 @@ export async function middleware(request: NextRequest) {
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
+
+  if (pathname.startsWith("/admin")) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
   if (subdomain) {
     const appRoutes = [
@@ -80,16 +69,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  const publicRoutes = [
-    "/",
-    "/authentication",
-    "/verify-email",
-    "/reset-password",
-  ];
-
-  const authOnlyRoutes = ["/authentication", "/verify-email"];
-
-  const protectedRoutePatterns = [
+  const protectedRoutes = [
     "/home",
     "/bytes",
     "/marketplace",
@@ -97,30 +77,43 @@ export async function middleware(request: NextRequest) {
     "/profile",
   ];
 
-  const isPublicRoute = publicRoutes.some(
+  const unauthenticatedOnlyRoutes = ["/", "/authentication", "/verify-email"];
+
+  const isProtectedRoute =
+    protectedRoutes.some(
+      (route) => pathname === route || pathname.startsWith(route + "/")
+    ) ||
+    (pathname.startsWith("/star") && !subdomain);
+
+  const isUnauthenticatedOnlyRoute = unauthenticatedOnlyRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
   );
 
-  const isProtectedRoute =
-    protectedRoutePatterns.some((route) => pathname.startsWith(route)) ||
-    (pathname.startsWith("/star") && !subdomain);
-
-  if (pathname === "/" && token) {
-    return NextResponse.redirect(new URL("/home", request.url));
-  }
-
-  if (
-    token &&
-    authOnlyRoutes.some(
-      (path) => pathname === path || pathname.startsWith(path + "/")
-    )
-  ) {
-    return NextResponse.redirect(new URL("/home", request.url));
-  }
-
-  if (!token && isProtectedRoute && !isPublicRoute && !subdomain) {
-    return NextResponse.redirect(new URL("/authentication", request.url));
+  if (token) {
+    if (isUnauthenticatedOnlyRoute) {
+      return NextResponse.redirect(new URL("/home", request.url));
+    }
+  } else {
+    if (isProtectedRoute) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   return NextResponse.next();
 }
+
+export const config = {
+  matcher: [
+    "/",
+    "/authentication/:path*",
+    "/verify-email/:path*",
+    "/reset-password/:path*",
+    "/home/:path*",
+    "/bytes/:path*",
+    "/marketplace/:path*",
+    "/leaderboard/:path*",
+    "/profile/:path*",
+    "/star/:path*",
+    "/admin/:path*",
+  ],
+};
