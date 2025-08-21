@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { rootDomain } from "@/lib/utils";
+import { getToken } from "next-auth/jwt";
 
 function extractSubdomain(request: NextRequest): string | null {
   const url = request.url;
@@ -20,7 +20,8 @@ function extractSubdomain(request: NextRequest): string | null {
     return null;
   }
 
-  const rootDomainFormatted = rootDomain.split(":")[0];
+  const rootDomainFormatted =
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN?.split(":")[0] || "localhost";
 
   if (hostname.includes("---") && hostname.endsWith(".vercel.app")) {
     const parts = hostname.split("---");
@@ -35,33 +36,91 @@ function extractSubdomain(request: NextRequest): string | null {
   return isSubdomain ? hostname.replace(`.${rootDomainFormatted}`, "") : null;
 }
 
+export const config = {
+  matcher: [
+    "/",
+    "/authentication/:path*",
+    "/verify-email/:path*",
+    "/reset-password/:path*",
+    "/home/:path*",
+    "/bytes/:path*",
+    "/marketplace/:path*",
+    "/leaderboard/:path*",
+    "/profile/:path*",
+    "/star/:path*",
+  ],
+};
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const subdomain = extractSubdomain(request);
 
-  if (pathname.startsWith("/admin")) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
 
   if (subdomain) {
-    if (!pathname.startsWith("/star")) {
+    const appRoutes = [
+      "/home",
+      "/bytes",
+      "/marketplace",
+      "/leaderboard",
+      "/profile",
+      "/authentication",
+      "/verify-email",
+      "/reset-password",
+    ];
+    const isAppRoute = appRoutes.some((route) => pathname.startsWith(route));
+
+    if (!pathname.startsWith("/star") && !isAppRoute) {
       return NextResponse.rewrite(
         new URL(`/star/${subdomain}${pathname}`, request.url)
       );
     }
   }
 
+  const publicRoutes = [
+    "/",
+    "/authentication",
+    "/verify-email",
+    "/reset-password",
+  ];
+
+  const authOnlyRoutes = ["/authentication", "/verify-email"];
+
+  const protectedRoutePatterns = [
+    "/home",
+    "/bytes",
+    "/marketplace",
+    "/leaderboard",
+    "/profile",
+  ];
+
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + "/")
+  );
+
+  const isProtectedRoute =
+    protectedRoutePatterns.some((route) => pathname.startsWith(route)) ||
+    (pathname.startsWith("/star") && !subdomain);
+
+  if (pathname === "/" && token) {
+    return NextResponse.redirect(new URL("/home", request.url));
+  }
+
+  if (
+    token &&
+    authOnlyRoutes.some(
+      (path) => pathname === path || pathname.startsWith(path + "/")
+    )
+  ) {
+    return NextResponse.redirect(new URL("/home", request.url));
+  }
+
+  if (!token && isProtectedRoute && !isPublicRoute && !subdomain) {
+    return NextResponse.redirect(new URL("/authentication", request.url));
+  }
+
   return NextResponse.next();
 }
-
-export const config = {
-  matcher: [
-    /*
-     * Match all paths except for:
-     * 1. /api routes
-     * 2. /_next (Next.js internals)
-     * 3. all root files inside /public (e.g. /favicon.ico)
-     */
-    "/((?!api|_next|[\\w-]+\\.\\w+).*)",
-  ],
-};
