@@ -646,7 +646,7 @@ export default function ByteDetailPage() {
                   <Clock className="h-4 w-4 text-[#4f7cff]" />
                   <span className="text-sm">
                     {byte.estimated_duration_minutes
-                      ? `~${byte.estimated_duration_minutes} min daily`
+                      ? `~${byte.estimated_duration_minutes} min`
                       : "No time limit"}
                   </span>
                 </div>

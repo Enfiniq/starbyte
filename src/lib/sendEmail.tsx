@@ -8,7 +8,7 @@ const BRAND = "#4f7cff";
 const BASE_URL =
   process.env.NEXTAUTH_URL ||
   process.env.NEXT_PUBLIC_BASE_URL ||
-  "http://localhost:3000";
+  "https://starbyte.neploom.com";
 
 export type EmailType =
   | "verification"
