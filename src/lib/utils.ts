@@ -9,4 +9,4 @@ export function cn(...inputs: ClassValue[]) {
 export const protocol =
   process.env.NODE_ENV === "production" ? "https" : "http";
 export const rootDomain =
-  process.env.NEXT_PUBLIC_ROOT_DOMAIN || "neploom.com";
+  process.env.NEXT_PUBLIC_ROOT_DOMAIN || "starbyte.neploom.com";
