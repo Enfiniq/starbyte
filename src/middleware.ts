@@ -23,7 +23,7 @@ function extractSubdomain(request: NextRequest): string | null {
 
   const rootDomainFormatted = rootDomain.split(":")[0];
 
-  if (hostname.includes("---") && hostname.endsWith(".neploom.com")) {
+  if (hostname.includes("---") && hostname.endsWith(".starbyte.neploom.com")) {
     const parts = hostname.split("---");
     return parts.length > 0 ? parts[0] : null;
   }
