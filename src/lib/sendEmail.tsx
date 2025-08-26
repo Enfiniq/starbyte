@@ -1,8 +1,5 @@
 import { ApiResponse } from "@/types/api.types";
 import nodemailer from "nodemailer";
-import fs from "fs/promises";
-import path from "path";
-import type Mail from "nodemailer/lib/mailer";
 
 const BRAND = "#4f7cff";
 const BASE_URL =
@@ -46,7 +43,6 @@ export async function sendEmail(
   if (!emailRegex.test(email))
     return { success: false, message: "Invalid email address format" };
 
-  // Purchased receipt path (delegates to receipt sender)
   if (type === "purchased") {
     const order = options?.purchase;
     if (!order)
@@ -54,7 +50,7 @@ export async function sendEmail(
         success: false,
         message: "Missing purchase details for receipt",
       };
-    // Lazy import to avoid circular deps, but it's same file; call the helper directly
+
     return sendPurchaseReceipt({
       to: email,
       orderId: order.orderId,
@@ -69,7 +65,6 @@ export async function sendEmail(
     });
   }
 
-  // Non-purchase flows require username and verifyCode
   if (!username) return { success: false, message: "Username is required" };
   if (!verifyCode)
     return { success: false, message: "Verification code is required" };
@@ -152,32 +147,11 @@ export async function sendEmail(
 
     const showBoxes = !isPasswordReset;
 
-    const attachments: Mail.Attachment[] = [];
-    let logoImgTag = "";
-    try {
-      const localLogoPath = path.join(
-        process.cwd(),
-        "public",
-        "icons",
-        "icon512_maskable.png"
-      );
-      const buffer = await fs.readFile(localLogoPath);
-      const logoCid = "logo-starbyte";
-      attachments.push({
-        filename: "logo.png",
-        content: buffer,
-        cid: logoCid,
-        contentType: "image/png",
-      });
-      logoImgTag = `<img src="cid:${logoCid}" alt="Starbyte" width="32" height="32" style="display: inline-block; vertical-align: middle;" />`;
-    } catch {
-      logoImgTag = `<img src="${LOGO_URL}" alt="Starbyte" width="32" height="32" style="display: inline-block; vertical-align: middle;" />`;
-    }
     const htmlResponse = `
       <body style="font-family: Inter, Arial, sans-serif; background-color: #f7f7f7; overflow-x: hidden; margin: 0; padding: 0; color: #333; display: flex; justify-content: center; align-items: center;">
         <div style="max-width: 800px; overflow-x: hidden; line-height: 2; width: 90%; min-width: 280px; margin: 50px auto; padding: 20px; background: #fff; box-shadow: 0 0 10px rgba(0, 0, 0, 0.08); border-radius: 12px;">
           <div style="margin: 20px auto 10px; width: 100%; max-width: 640px; padding: 0 0 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 12px;">
-            ${logoImgTag}
+            <img src="${LOGO_URL}" alt="Starbyte" width="32" height="32" style="display: inline-block; vertical-align: middle;" />
             <a href="${BASE_URL}" style="font-size: 1.4em; color: ${BRAND}; text-decoration: none; font-weight: 800; letter-spacing: 0.2px;">Starbyte</a>
           </div>
           <div style="margin: 0 auto; width: 100%; max-width: 640px; padding: 10px 0;">
@@ -217,8 +191,8 @@ export async function sendEmail(
               <p style="margin: 6px 0;">&copy; ${new Date().getFullYear()} Starbyte. All rights reserved.</p>
               <p style="margin: 6px 0;">Rupandehi, Nepal</p>
               <p style="margin: 6px 0;">
-                <a href="${BASE_URL}/privacy" style="color: ${BRAND}; text-decoration: none;">Privacy Policy</a> |
-                <a href="${BASE_URL}/terms" style="color: ${BRAND}; text-decoration: none;">Terms of Service</a> |
+                <a href="${BASE_URL}/privacy-policy" style="color: ${BRAND}; text-decoration: none;">Privacy Policy</a> |
+                <a href="${BASE_URL}/terms-of-service" style="color: ${BRAND}; text-decoration: none;">Terms of Service</a> |
                 <a href="${BASE_URL}/support" style="color: ${BRAND}; text-decoration: none;">Support</a>
               </p>
             </div>
@@ -235,7 +209,6 @@ export async function sendEmail(
         ? `Password reset link: ${content.buttonUrl}`
         : `Verification Code from Starbyte: ${verifyCode}`,
       html: htmlResponse,
-      attachments: attachments.length ? attachments : undefined,
     };
 
     try {
@@ -274,29 +247,7 @@ export async function sendPurchaseReceipt(params: {
       tls: { rejectUnauthorized: false },
     });
 
-    // Prepare embedded Starbyte logo (CID) with fallback to public URL
-    const attachments: Mail.Attachment[] = [];
-    let logoImgTag = "";
-    try {
-      const localLogoPath = path.join(
-        process.cwd(),
-        "public",
-        "icons",
-        "icon512_maskable.png"
-      );
-      const buffer = await fs.readFile(localLogoPath);
-      const logoCid = "logo-starbyte-receipt";
-      attachments.push({
-        filename: "logo.png",
-        content: buffer,
-        cid: logoCid,
-        contentType: "image/png",
-      });
-      logoImgTag = `<img src="cid:${logoCid}" width="36" height="36" alt="Starbyte" style="border-radius:8px;"/>`;
-    } catch {
-      const publicLogo = `${BASE_URL}/icons/icon512_maskable.png`;
-      logoImgTag = `<img src="${publicLogo}" width="36" height="36" alt="Starbyte" style="border-radius:8px;"/>`;
-    }
+    const logoImgTag = `<img src="${BASE_URL}/icons/icon512_maskable.png" width="36" height="36" alt="Starbyte" style="border-radius:8px;"/>`;
 
     const formatPrice = (n: number) => `${n} Stardust`;
     const productRows = products
@@ -377,8 +328,8 @@ export async function sendPurchaseReceipt(params: {
             <p style="margin: 6px 0;">&copy; ${new Date().getFullYear()} Starbyte. All rights reserved.</p>
             <p style="margin: 6px 0;">Rupandehi, Nepal</p>
             <p style="margin: 6px 0;">
-              <a href="${BASE_URL}/privacy" style="color: ${BRAND}; text-decoration: none;">Privacy Policy</a> |
-              <a href="${BASE_URL}/terms" style="color: ${BRAND}; text-decoration: none;">Terms of Service</a> |
+              <a href="${BASE_URL}/privacy-policy" style="color: ${BRAND}; text-decoration: none;">Privacy Policy</a> |
+              <a href="${BASE_URL}/terms-of-service" style="color: ${BRAND}; text-decoration: none;">Terms of Service</a> |
               <a href="${BASE_URL}/support" style="color: ${BRAND}; text-decoration: none;">Support</a>
             </p>
           </div>
@@ -390,7 +341,6 @@ export async function sendPurchaseReceipt(params: {
       to,
       subject: "Your Starbyte Receipt",
       html,
-      attachments: attachments.length ? attachments : undefined,
     });
     return { success: true, message: "Receipt email sent." };
   } catch {
