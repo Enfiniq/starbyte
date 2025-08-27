@@ -5,7 +5,6 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import SessionProvider from "@/providers/SessionProvider";
 
-
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -17,7 +16,6 @@ export const metadata: Metadata = {
     default: "Starbyte",
     template: "%s | Starbyte",
   },
-
   description:
     "Starbyte is a social challenge platform where Stars create and complete meaningful physical and digital challenges. Prove real-world actions with photos to earn Stardust, unlock digital challenges, share progress, and build better habits together.",
   keywords: [
@@ -38,6 +36,16 @@ export const metadata: Metadata = {
     "progress sharing",
     "community challenges",
     "goal tracking",
+    "Starbyte",
+    "starbyte",
+    "Bytes",
+    "Starbytes",
+    "starbytes",
+    "Good Habits",
+    "Gifts",
+    "Awards",
+    "Community",
+    "Proof",
   ],
   icons: [
     { rel: "icon", url: "/icons/icon-16x16.png", sizes: "16x16" },
@@ -107,9 +115,9 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   verification: {
-    // google: "your-google-site-verification-code",
-    // yandex: "your-yandex-verification-code",
-    // bing: "your-bing-site-verification-code",
+    google: process.env.GOOGLE_VERIFICATION,
+    yandex: process.env.YANDEX_VERIFICATION,
+    yahoo: process.env.YAHOO_VERIFICATION,
   },
   alternates: {
     canonical:
